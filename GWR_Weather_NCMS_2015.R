@@ -156,9 +156,9 @@ for (i in 1:length(filenames)) {
 # to calculate the average of wind speed and wind direction  
 # 
 
-write_csv(All_AWS_data, "D:/Air Quality/GWR_with_met/met_refined/AWS_concatenated_met_2015.csv")
+#write_csv(All_AWS_data, "D:/Air Quality/GWR_with_met/met_refined/AWS_concatenated_met_2015.csv")
 
-
+write_csv(All_AWS_data,"D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/AWS_concatenated_met_2015.csv")
 
 
 #############################################################################################
@@ -166,8 +166,8 @@ write_csv(All_AWS_data, "D:/Air Quality/GWR_with_met/met_refined/AWS_concatenate
 #############################################################################################
 
 
-setwd("D:/Air Quality/GWR_with_met/")
-All_AWS_data <- read_csv("met_refined/AWS_concatenated_met_2015.csv")
+setwd("D:/Air Quality/GWR_with_met/Result/Monthly/")
+All_AWS_data <- read_csv("met_refined_data/AWS_concatenated_met_2015.csv")
 # All_AWS_data <- read_csv("AWS_concatenated_DUST_2_April_2015_AVG.csv")
 
 # rebuild DateTime variable
@@ -406,18 +406,18 @@ for (i in 1:12){
   
 }
 
-writeRaster(Total_wind, "D:/Air Quality/GWR_with_met/Variables_raster/Wind_NCMS_10km.tif", 
+writeRaster(Total_wind, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Wind_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_temp, "D:/Air Quality/GWR_with_met/Variables_raster/Temp_NCMS_10km.tif", 
+writeRaster(Total_temp, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Temp_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_RH, "D:/Air Quality/GWR_with_met/Variables_raster/RH_NCMS_10km.tif", 
+writeRaster(Total_RH, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/RH_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_Radiation, "D:/Air Quality/GWR_with_met/Variables_raster/Radiation_NCMS_10km.tif", 
+writeRaster(Total_Radiation, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Radiation_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_dew, "D:/Air Quality/GWR_with_met/Variables_raster/DEW_NCMS_10km.tif", 
+writeRaster(Total_dew, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/DEW_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
 
-save(Total_wind,Total_temp,Total_RH,Total_Radiation,Total_dew, file="D:/Air Quality/GWR_with_met/Variables_raster/NCMS_10km.RData")
+save(Total_wind,Total_temp,Total_RH,Total_Radiation,Total_dew, file="D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/NCMS_10km.RData")
 
 
 {
@@ -450,7 +450,7 @@ save(Total_wind,Total_temp,Total_RH,Total_Radiation,Total_dew, file="D:/Air Qual
 
 
 #################################################################################
-######### AOD for 2015 ##########################################################
+######### AOD for 2015 FROM MODIS ###############################################
 #################################################################################
 
 
@@ -463,7 +463,7 @@ for (kk in 1:12){
   
     ### for the year of 2016
     #i=1
-    coefi_conver<- 85
+    #coefi_conver<- 85
     
     ### for the year of 2015
     
@@ -503,9 +503,9 @@ for (kk in 1:12){
 
 #plot(Total_AOD$October, main=names(Total_AOD$October))
 
-writeRaster(Total_AOD, "D:/Air Quality/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.tif",overwrite=TRUE,
+writeRaster(Total_AOD, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/AOD_mean_monthly_2015.tif",overwrite=TRUE,
             options="INTERLEAVE=BAND")
-save(Total_AOD, file="D:/Air Quality/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.RData")
+save(Total_AOD, file="D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/AOD_mean_monthly_2015.RData")
 
 
 
@@ -517,43 +517,93 @@ save(Total_AOD, file="D:/Air Quality/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthl
 #$$$$$ monthly loop $$$$$$$$$
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
+
+
 Total_monitoring_PM25<- stack()
+
+
 for (i in 1:12){
   # i=1
+  
   load("D:/Air Quality/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
-  AQ_data_PM25 <- AQ_data_12 %>%
-    filter(Pollutant == "PM2.5" & years == 2015) %>%
-    #filter(Date == as.Date("2016-08-26"))      # DG 
+  
+  ## filtering the data for PM2.5 and 2015
+  AQ_data_2015 <- AQ_data_12 %>%
+    filter(years == 2015, Pollutant == "PM2.5" ) 
+  AQ_data_2015 <- na.omit(AQ_data_2015)
+  
+  ## filtering for specific month
+  AQ_data_PM25 <- AQ_data_2015 %>%
     filter (months==i)
   
-  # monthly mean of january
-  AQ_data_PM25 <- AQ_data_PM25 %>%
-    group_by(Site, years) %>%
-    summarize(mon_mean= mean(Value, na.rm = T))
+  # removing stations with very low monthly observations
+  stations_remove <- AQ_data_PM25 %>%   # stations less than 5 day reading are removed to reduce the BIAS
+      group_by(Site) %>%
+      summarize(station_count= sum(Value == Value))%>%
+      filter(station_count <= 5)
   
+  # filterig stations with enough observations monthly
+  if ( nrow(stations_remove) > 0 ){
+    AQ_data_PM25<- AQ_data_PM25%>%
+      filter( !(Site %in% c(stations_remove$Site )))
+  }
+  
+  
+  # monthly mean of the month
+  AQ_data_PM25 <- AQ_data_PM25 %>%
+    group_by(Site, years, months) %>%
+    summarize(mon_mean= mean(Value, na.rm = T))
+
   # # monthly mean of january
   # AQ_data_PM25 <- AQ_data_PM25 %>%
   #   group_by(Site) %>%
   #   summarize(sea_mean=mean(mon_mean, na.rm = T))
   
-  coordin_site<-filter(AQ_data_12,  Pollutant == "PM2.5" )
-  coordin_site<-coordin_site %>%
-    dplyr::distinct(Site, .keep_all = T)
+  # goegraphical location of the stations
   
+  coordin_site<-filter(AQ_data_2015,  Pollutant == "PM2.5" , months==i)
+  coordin_site<-coordin_site %>%
+    dplyr::distinct(Site, .keep_all = T)%>%
+    dplyr::select(-years)
   
   AQ_data_PM25<- left_join(AQ_data_PM25, coordin_site, by= c("Site"= "Site" ))
   
+  AQ_data_PM25<- as.data.frame(AQ_data_PM25)     # to ungroup the variables
   
   AQ_data_PM25 <- AQ_data_PM25 %>%
-    select(Site,
+    dplyr::select(Site,
            Longitude,
            Latitude,
            mon_mean)
   
   # remove all lines with NA
   AQ_data_PM25 <- na.omit(AQ_data_PM25)
+
   
-  AQ_data_PM25<- as.data.frame(AQ_data_PM25)  # to ungroup the variables
+  
+  # selecting 70% of the monitoring stations for the training and the rest 30% 
+  # for vallidating the coefficients
+  # D:\Air Quality\GWR_with_met\Result\Images\Results of 70_30 rm RH\station for validation
+  
+  if (!file.exists(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_training.RData"))){
+    # 30% training stations
+    pop_station<- AQ_data_PM25 %>%
+      dplyr::distinct(Site)
+    
+    
+    training_station <- sample_n(pop_station, floor(0.7*nrow(pop_station)), replace = FALSE)
+    validation_station <- subset(pop_station, !(pop_station$Site %in% training_station$Site))
+    save(training_station, file=paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_training.RData"))
+    save(validation_station, file=paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_validation.RData"))
+  }else{
+    load(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_training.RData"))
+    load(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_validation.RData"))
+  }
+  
+  AQ_data_PM25<- AQ_data_PM25%>%
+    filter(Site %in% c(training_station$Site))
+  
+  
   #write.csv( AQ_data_PM25, "D:/Air Quality/federico AQ index/mean_aver_jan_moni.csv",row.names=F)
   
   
@@ -584,9 +634,9 @@ for (i in 1:12){
 }
 
 
-writeRaster(Total_monitoring_PM25, "D:/Air Quality/GWR_with_met/Monitoring/Moni_PM25_mean_monthly_2015.tif",
+writeRaster(Total_monitoring_PM25, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.tif",
             options="INTERLEAVE=BAND", overwrite=TRUE)
-save(Total_monitoring_PM25, file= "D:/Air Quality/GWR_with_met/Monitoring/Moni_PM25_mean_monthly_2015.RData")
+save(Total_monitoring_PM25, file= "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.RData")
 
 rm(Total_monitoring_PM25)
 
@@ -606,18 +656,21 @@ old <- Sys.time()
 
 setwd("D:/Air Quality/GWR_with_met/")
 
+output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+
 result_monthly<- list()
 
 # OD_mean_jan<-raster("MODIS/AOD_mean_01.tif")
 # plot(OD_mean_jan)
 for (qq in 1:12){
   #qq=10
-  load("D:/Air Quality/GWR_with_met/Variables_raster/NCMS_10km.RData")
-  load("D:/Air Quality/GWR_with_met/Monitoring/Moni_PM25_mean_monthly_2015.RData")
-  load("D:/Air Quality/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.RData")
+  load("D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/NCMS_10km.RData")
+  load("D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.RData")
+  #load("D:/Air Quality/GWR_with_met/Monitoring/Moni_PM25_mean_monthly_2015.RData")
+  load("D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/AOD_mean_monthly_2015.RData")
   # LU_fract_desert<- raster("Land_cover/desert_fraction.tif")#/100 ## constant for all months
   # LU_fract_urban<- raster("Land_cover/urban_fraction.tif")#/100   ## constant for all months
-  
+  # plot(Total_AOD$January)
   # AOD from MODIS
   #name_mon<- sprintf("%02d",qq)
   AOD_mean_jan<-Total_AOD[[month.name[qq]]]
@@ -636,11 +689,11 @@ for (qq in 1:12){
   RH<- Total_RH[[month.name[qq]]]
   Radiation<- Total_Radiation[[month.name[qq]]]
   
-
+  
   #### rearranging the layers
   
-  plot(r_moni)
-  plot(AOD_mean_jan)
+  # plot(r_moni)
+  # plot(AOD_mean_jan)
   
   AOD_mean_jan <- resample(AOD_mean_jan,r_moni,"bilinear")
   wind_speed <- resample(wind_speed,r_moni,"bilinear")
@@ -648,17 +701,17 @@ for (qq in 1:12){
   DEW <- resample(DEW,r_moni,"bilinear")
   RH <- resample(RH,r_moni,"bilinear")
   Radiation <- resample(Radiation,r_moni,"bilinear")
-  plot(r_moni)
-  plot(AOD_mean_jan)
+  # plot(r_moni)
+  # plot(AOD_mean_jan)
   
   #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-  ####  as SpatialPointsDataFrame layers Method IIII  ####
+  ####  as SpatialPointsDataFrame layers Method III   ####
   #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ 
   
-  #plot(BIAS)
+  # plot(BIAS)
   AOD_mean_jan_pts <- as.data.frame(AOD_mean_jan, xy=T)
   colnames(AOD_mean_jan_pts)<- c("x", "y", "AOD_mean")
-
+  
   r_moni_pts <- as.data.frame(r_moni, xy=T)
   colnames(r_moni_pts)<- c("x", "y", "Moni")
   
@@ -687,21 +740,41 @@ for (qq in 1:12){
   mydata<- na.omit(mydata)
   
   mydata$AOD_mean<-mydata$AOD_mean/85
-  mydata$RH<-mydata$RH/100
+  mydata$RH<-mydata$RH
   
   library(spgwr)
-
-  bwG_pnt <- gwr.sel(Moni ~  AOD_mean + wind_speed  + DEW+ temp+ RH ,#+ RH ,#+ temp
-                 data= mydata,  coords=cbind( mydata$x , mydata$y),
-                 gweight = gwr.Gauss, #RMSE=T,
-                 method="cv", verbose = F, show.error.messages = T)
   
-
-  gwrG_pnt <- gwr(Moni ~  AOD_mean + wind_speed + DEW+ temp+RH  ,#+RH , #+ temp
-              data= mydata,  bandwidth = bwG_pnt*2,  coords=cbind( mydata$x , mydata$y),
-              gweight = gwr.Gauss, hatmatrix = TRUE,predictions = T)
-
+  bwG_pnt <- gwr.sel(Moni ~  AOD_mean + wind_speed  + DEW+  RH ,#+ RH ,#+ temp
+                     data= mydata,  coords=cbind( mydata$x , mydata$y),
+                     gweight = gwr.Gauss, #RMSE=T,
+                     method="cv", verbose = F, show.error.messages = T)
   
+  
+  gwrG_pnt <- gwr(Moni ~  AOD_mean + wind_speed + DEW+ RH  ,#+RH , #+ temp
+                  data= mydata,  bandwidth = bwG_pnt*1.1,  coords=cbind( mydata$x , mydata$y),
+                  gweight = gwr.Gauss, hatmatrix = TRUE,predictions = T)
+  
+  
+  resave <- function(..., list = character(), file) {
+    previous  <- load(file)
+    var.names <- c(list, as.character(substitute(list(...)))[-1L])
+    for (var in var.names) assign(var, get(var, envir = parent.frame()))
+    save(list = unique(c(previous, var.names)), file = file)
+  }
+  
+  nam <- paste("gwrG_pnt_", month.name[qq], sep = "")
+  nam_mydata<- paste("Input_data_", month.name[qq], sep = "")
+  assign(nam, gwrG_pnt)
+  assign(nam_mydata, mydata )
+  if (qq==1){
+    save(list= eval(nam), file= paste0(output_folder, "GWR_file.RData"))
+    save(list= eval(nam_mydata), file= paste0(output_folder, "Input_mydata_file.RData"))
+  }else{
+    resave(list = eval(nam), file= paste0(output_folder, "GWR_file.RData"))
+    resave(list= eval(nam_mydata), file= paste0(output_folder, "Input_mydata_file.RData"))
+  }
+  
+  #dawit<-load(file)
   #dadada<- as.data.frame(gwrG_pnt$SDF)
   #plot(dadada$localR2)
   
@@ -713,11 +786,13 @@ for (qq in 1:12){
   print(qq)
   print(plot(gwrG_pnt$SDF$localR2, main=qq))
   
-  rm(list = ls()[!ls() %in% c( "result_monthly", "old")])
+  rm(list = ls()[!ls() %in% c( "result_monthly", "old","output_folder")])
   
 }
 
-save(result_monthly, file="D:/Air Quality/GWR_with_met/Result/result_regression.RData")
+
+
+# save(result_monthly, file="D:/Air Quality/GWR_with_met/Result/data/result_regression_cv_70_30_rm_RH.RData")
 
 
 
@@ -726,16 +801,16 @@ print(new)
 
 
 {
-  
+
   # library(spgwr)
   # #BIAS <- r_moni-r_AOD_sampled
-  # 
+  #
   # r_moni_sp <- as(r_moni, 'SpatialPointsDataFrame')
   # names(r_moni_sp)<- "Moni"
   # r_AOD_sampled_sp<-as(AOD_mean_jan, 'SpatialPointsDataFrame')
   # names(r_AOD_sampled_sp)<- "Modis_AOD"
-  # 
-  # 
+  #
+  #
   # wind_speed_sp <- as(wind_speed, 'SpatialPointsDataFrame')
   # names(wind_speed_sp)<- "wind_speed"
   # temp_sp <- as(temp, 'SpatialPointsDataFrame')
@@ -746,19 +821,19 @@ print(new)
   # names(Radiation_sp)<- "Radiation"
   # RH_sp <- as(RH, 'SpatialPointsDataFrame')
   # names(RH_sp)<- "RH"
-  # 
-  # 
-  
+  #
+  #
+
   # combined_data_pnt <- cbind(r_moni_sp,r_AOD_sampled_sp, wind_speed_sp,temp_sp,
   #                          DEW_sp, Radiation_sp,RH_sp)
-  # 
+  #
   # plot(ED)
-  
-  
+
+
   # bwG_pnt <- gwr.sel( Moni ~  Modis_AOD + wind_speed + temp+ DEW+RH ,
   #                     data= combined_data_pnt,  gweight = gwr.Gauss, #RMSE=T,
   #                     method="cv", verbose = F, show.error.messages = T)
-  
+
   # if (bwG_pnt < 11){
   # gwrG_pnt <- gwr(BIAS ~  urban_fraction +desert_fraction + ECMWF_DUST_jan_10km + ED,#+ ECMWF_SO4_jan_10km ,#  ED + urban_fraction +desert_fraction + ED + ECMWF_DUST_jan_10km + ECMWF_SO4_jan_10km+ desert_fraction + ECMWF_SALT_jan_10km,#   , #  ECMWF_DUST_jan_10km ++ ECMWF_DUST_jan_10km + ECMWF_BC_jan_10km
   #                 data= combined_data_pnt_ED,  bandwidth = 11,
@@ -769,6 +844,7 @@ print(new)
   #                 gweight = gwr.Gauss, hatmatrix = TRUE,predictions = T)
   # }
 }
+
 
 
 
@@ -787,45 +863,77 @@ print(new)
 
 
 
+
 rm(list = ls(all = TRUE))
 
 #### LOADING THE RESULT WORKSPACE
 
-load("D:/Air Quality/GWR_with_met/Result/result_regression.RData")
+output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/"
+load_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/"
 
-#### ploting the histogram of the r2 for all the months ####
-
-data_frame_r2<- data.frame()
-
-for (kk in 0:11){
-  
-  dawi<- result_monthly[[kk*12+1]]
-  dawi<- as.data.frame( dawi$localR2)
-  month_ind<- cbind(dawi, rep (kk+1,nrow(dawi)))
-  colnames(month_ind)<-c("r2", "month_ind")
-  data_frame_r2<-rbind(data_frame_r2,month_ind)
+loadOneName <- function(objName, file, envir = parent.frame(),
+                        assign.on.exit = TRUE) {
+  tempEnv <- new.env()
+  load(file, envir = tempEnv)
+  stopifnot(objName %in% ls(tempEnv))
+  if(assign.on.exit) {
+    assign(objName, tempEnv[[objName]], envir = envir)
+    return(invisible(tempEnv[[objName]]))
+  }
+  tempEnv[[objName]]
 }
 
 
+cool = rainbow(100, start=rgb2hsv(col2rgb('green'))[1], end=rgb2hsv(col2rgb('blue'))[1])
+warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green'))[1])
+#middle = rainbow(215, start=rgb2hsv(col2rgb('#FF8600FF'))[1], end=rgb2hsv(col2rgb('green'))[1])
+cols = c(rev(cool),  rev(warm))
+
+
+
+
+##### ploting the histogram of the r2  ####
+
+data_frame_r2<- data.frame()
+r2_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "localR2")])
+  r2_data<- dawi[, c( "localR2")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("r2", "month_ind")
+  data_frame_r2<-rbind(data_frame_r2,month_ind)
+  r2_ras_stack<- stack(r2_ras_stack,ras_r2)
+}
+
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
+
+
+
+
 data_frame_r2<- cbind(data_frame_r2, month.name[data_frame_r2$month_ind])
+colnames(data_frame_r2)[3]<- "Month"
 
 scaleFUN <- function(x) sprintf("%.1f", x)
 
 hp <- ggplot(data_frame_r2, aes(x=r2)) + 
   # qplot( data_frame_r2$r2, y=NULL, data_frame_r2, binwidth= 0.01, xlim=c(0,1), facet_wrap( ~ data_frame_r2$month_ind, ncol=3),
   #        geom="histogram", fill=I("blue" ),alpha=I(.4),ylab ="")+
-  geom_histogram (binwidth=0.01,colour="red",fill=I("red" ),alpha=I(.8))+
-  scale_x_continuous(limits = c(0, 1), labels= scaleFUN )+
-  scale_y_continuous(name="")
+  geom_histogram (binwidth=0.01,fill=I("blue" ),alpha=I(.8))+ #colour="blue",
+  scale_x_continuous(limits = c(0, 1), labels= scaleFUN , name=expression(R^2))+
+  scale_y_continuous(name="Counts" )+
+  ggtitle(expression(paste("Local ", R^2))) + 
+  theme(plot.title = element_text(lineheight=.8, face="bold", hjust = 0.5))+
+  theme(axis.text=element_text(size=10, face="bold"),
+        axis.title=element_text(size=12,face="bold"))+
+  facet_wrap( ~ data_frame_r2$month_ind + data_frame_r2$Month, ncol=3, labeller = labeller("label_both", .multi_line = F, sep = ": "))
 
-hp<- hp+ facet_wrap( ~ data_frame_r2$month_ind + data_frame_r2$`month.name[data_frame_r2$month_ind]`)+
-  theme(strip.text.x = element_text(size = 11,  angle = 0))
-
-#hp 
-
-
+#hp
 
 
 png(paste0(output_folder,"histogram_r2.png"),
@@ -835,24 +943,8 @@ print(hp)
 dev.off()
 
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-######
-######
-###### ploting the coefficients #######
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-# # # # # #
-# [1] "sum.w"              "(Intercept)"        "AOD_mean"           "wind_speed"         "DEW"               
-# [6] "temp"               "RH"                 "(Intercept)_se"     "AOD_mean_se"        "wind_speed_se"     
-# [11] "DEW_se"             "temp_se"            "RH_se"              "gwr.e"              "pred"              
-# [16] "pred.se"            "localR2"            "(Intercept)_se_EDF" "AOD_mean_se_EDF"    "wind_speed_se_EDF" 
-# [21] "DEW_se_EDF"         "temp_se_EDF"        "RH_se_EDF"          "pred.se_EDF"       
-# 
-# coordi_x_y<- result_monthly$SDF@coords
-# names(coordi_x_y)<-c("x", "y")
 
-
-
-rm(list = ls()[!ls() %in% c( "result_monthly","output_folder")])
+#### Ploting the R2 maps
 
 library(viridis)
 library(lattice)
@@ -863,7 +955,7 @@ shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
 
 
-#### AOD_mean COEFFICIENTS ####
+#### R2 maps ###
 
 
 ####### color pallet
@@ -874,36 +966,26 @@ warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green
 cols = c(rev(cool),  rev(warm))
 
 
-AOD_coeffi<- stack()
+max_val<-ceiling(max(maxValue(r2_ras_stack)))
+min_val<-floor(min(minValue(r2_ras_stack)))
 
-for (kk in 0:11){
-  
-  dawi<- result_monthly[[kk*12+1]]
- # dawi<- cbind(dawi,coordi_x_y)
-  dawi<- rasterFromXYZ( as.data.frame(dawi)[, c("coord.x","coord.y", "AOD_mean")])
-  names(dawi)<- month.name[(kk+1)]
-  AOD_coeffi<-stack(AOD_coeffi,dawi)
-}
-
-max_val<-ceiling(max(maxValue(AOD_coeffi)))
-min_val<-floor(min(minValue(AOD_coeffi)))
-
-stat_dat<- summary(as.vector(AOD_coeffi))
+stat_dat<- summary(as.vector(r2_ras_stack))
 IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
 
-low_IQR<-floor(as.numeric((stat_dat[2]- IQR)))
-high_IQR<-ceiling(as.numeric((stat_dat[5]+IQR)))
+
+low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
 
 
-vec_all<- as.vector(AOD_coeffi)
-vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
+vec_all<- as.vector(r2_ras_stack)
+# vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
 
 xxx<- pretty( vec_all, n=10)
 xxx<- (c(min_val, xxx, max_val))
 
-AOD_plot <-AOD_coeffi
-AOD_plot[AOD_plot < low_IQR ]<- low_IQR
-AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
+AOD_plot <-r2_ras_stack
+# AOD_plot[AOD_plot < low_IQR ]<- low_IQR
+# AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
 
 ## 
 
@@ -913,7 +995,7 @@ AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
 
 
 h <- rasterVis::levelplot(AOD_plot, 
-                          margin=FALSE, main= "AOD COEFFICIENTS" ,
+                          margin=FALSE, main= expression(paste("Monthly Local ", R^2)) ,
                           ## about colorbar
                           colorkey=list(
                             space='right',                   
@@ -921,7 +1003,7 @@ h <- rasterVis::levelplot(AOD_plot,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title=expression(paste("     ",mu,"g ",m^-3))
+                            title=""
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -939,16 +1021,132 @@ h <- rasterVis::levelplot(AOD_plot,
 #h
 
 
-
-png(paste0(output_folder,"Coefffi_AOD.png"),
+png(paste0(output_folder,"Maps_local_r2.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
     bg = "white", res = 150)
 print(h)
 dev.off()
 
+
+rm(list = ls()[!ls() %in% c( "output_folder", "cols", "shp_UAE","loadOneName","load_folder")])
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+# # # # # #
+# [1] "sum.w"              "(Intercept)"        "AOD_mean"           "wind_speed"         "DEW"               
+# [6] "temp"               "RH"                 "(Intercept)_se"     "AOD_mean_se"        "wind_speed_se"     
+# [11] "DEW_se"             "temp_se"            "RH_se"              "gwr.e"              "pred"              
+# [16] "pred.se"            "localR2"            "(Intercept)_se_EDF" "AOD_mean_se_EDF"    "wind_speed_se_EDF" 
+# [21] "DEW_se_EDF"         "temp_se_EDF"        "RH_se_EDF"          "pred.se_EDF"       
+# 
+# coordi_x_y<- result_monthly$SDF@coords
+# names(coordi_x_y)<-c("x", "y")
+
+
+#####
+
+##### AOD coefficents ####
+
+
+data_frame_AOD<- data.frame()
+AOD_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "AOD_mean")])
+  r2_data<- dawi[, c( "AOD_mean")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("AOD_mean", "month_ind")
+  data_frame_AOD<-rbind(data_frame_AOD,month_ind)
+  AOD_ras_stack<- stack(AOD_ras_stack,ras_r2)
+}
+
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
+
+
+data_frame_AOD<- cbind(data_frame_AOD, month.name[data_frame_AOD$month_ind])
+colnames(data_frame_AOD)[3]<- "Month"
+
+scaleFUN <- function(x) sprintf("%.1f", x)
+
+
+#### Ploting the AOD maps
+
+library(viridis)
+library(lattice)
+
+dir <- "D:/Air Quality/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
+
+max_val<-ceiling(max(maxValue(AOD_ras_stack)))
+min_val<-floor(min(minValue(AOD_ras_stack)))
+
+stat_dat<- summary(as.vector(AOD_ras_stack))
+IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
+
+
+low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
+
+
+vec_all<- as.vector(AOD_ras_stack)
+vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
+
+xxx<- pretty( vec_all, n=10)
+xxx<- (c(min_val, xxx, max_val))
+
+AOD_plot <-AOD_ras_stack
+AOD_plot[AOD_plot < low_IQR ]<- low_IQR
+AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
+
+## 
+
+
+### plots of maps 
+
+
+
+h <- rasterVis::levelplot(AOD_plot, 
+                          margin=FALSE, main= "AOD Coefficients" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("     ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
+                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                          names.attr=rep(names(AOD_plot))) +
+  latticeExtra::layer(sp.polygons(shp_UAE))
+#h
+
+
+png(paste0(output_folder,"Coefficients_AOD.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
 ### plots of histograms
-
-
 
 #vec_all<- as.vector(AOD_plot)
 png(paste0(output_folder,"hist_AOD.png"),
@@ -963,44 +1161,67 @@ dev.off()
 
 
 
-
-rm(list = ls()[!ls() %in% c( "result_monthly", "cols", "shp_UAE","output_folder")])
-
+rm(list = ls()[!ls() %in% c( "output_folder", "cols", "shp_UAE","loadOneName","load_folder")])
 
 
-#### Wind Speed COEFFICIENTS ####
+#####
+
+##### Wind Speed coefficents ####
 
 
-WSpeed_coeffi<- stack()
-
-for (kk in 0:11){
-  
-  dawi<- result_monthly[[kk*12+1]]
-  # dawi<- cbind(dawi,coordi_x_y)
-  dawi<- rasterFromXYZ( as.data.frame(dawi)[, c("coord.x","coord.y", "wind_speed")])
-  names(dawi)<- month.name[(kk+1)]
-  WSpeed_coeffi<-stack(WSpeed_coeffi,dawi)
+data_frame_WS<- data.frame()
+WS_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "wind_speed")])
+  r2_data<- dawi[, c( "wind_speed")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("wind_speed", "month_ind")
+  data_frame_WS<-rbind(data_frame_WS,month_ind)
+  WS_ras_stack<- stack(WS_ras_stack,ras_r2)
 }
 
-max_val<-ceiling(max(maxValue(WSpeed_coeffi)))
-min_val<-floor(min(minValue(WSpeed_coeffi)))
-
-stat_dat<- summary(as.vector(WSpeed_coeffi))
-IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])*2))# n is the space after IQR
-
-low_IQR<-floor(as.numeric((stat_dat[2]- IQR)))
-high_IQR<-ceiling(as.numeric((stat_dat[5]+IQR)))
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
 
 
-vec_all<- as.vector(WSpeed_coeffi)
+data_frame_WS<- cbind(data_frame_WS, month.name[data_frame_WS$month_ind])
+colnames(data_frame_WS)[3]<- "Month"
+
+#### Ploting the WS maps
+
+library(viridis)
+library(lattice)
+
+dir <- "D:/Air Quality/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
+
+max_val<-ceiling(max(maxValue(WS_ras_stack)))
+min_val<-floor(min(minValue(WS_ras_stack)))
+
+stat_dat<- summary(as.vector(WS_ras_stack))
+IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
+
+
+low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
+
+
+vec_all<- as.vector(WS_ras_stack)
 vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
 
 xxx<- pretty( vec_all, n=10)
 xxx<- (c(min_val, xxx, max_val))
 
-WSpeed_plot <-WSpeed_coeffi
-WSpeed_plot[WSpeed_plot < low_IQR ]<- low_IQR
-WSpeed_plot[ WSpeed_plot >  high_IQR]<- high_IQR
+AOD_plot <-WS_ras_stack
+AOD_plot[AOD_plot < low_IQR ]<- low_IQR
+AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
 
 ## 
 
@@ -1009,8 +1230,8 @@ WSpeed_plot[ WSpeed_plot >  high_IQR]<- high_IQR
 
 
 
-h <- rasterVis::levelplot(WSpeed_plot, 
-                          margin=FALSE, main= "Wind Speed COEFFICIENTS" ,
+h <- rasterVis::levelplot(AOD_plot, 
+                          margin=FALSE, main= "Wind Speed Coefficients" ,
                           ## about colorbar
                           colorkey=list(
                             space='right',                   
@@ -1018,7 +1239,7 @@ h <- rasterVis::levelplot(WSpeed_plot,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title=expression(paste("     ", mu,"g ",m^-3,"/(m ", sec^-1,")"))
+                            title= expression(paste("     ", mu,"g ",m^-3,"/(m ", sec^-1,")"))
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -1031,13 +1252,12 @@ h <- rasterVis::levelplot(WSpeed_plot,
                           col.regions = cols,
                           at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
-                          names.attr=rep(names(WSpeed_plot))) +
+                          names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
 #h
 
 
-
-png(paste0(output_folder,"Coefffi_WSpeed.png"),
+png(paste0(output_folder,"Coefficients_WS.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
     bg = "white", res = 150)
 print(h)
@@ -1046,9 +1266,8 @@ dev.off()
 
 ### plots of histograms
 
-
 #vec_all<- as.vector(AOD_plot)
-png(paste0(output_folder,"hist_WSpeed.png"),
+png(paste0(output_folder,"hist_WS.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
     bg = "white", res = 150)
 print({
@@ -1060,44 +1279,70 @@ dev.off()
 
 
 
-
-rm(list = ls()[!ls() %in% c( "result_monthly", "cols", "shp_UAE","output_folder")])
-
+rm(list = ls()[!ls() %in% c( "output_folder", "cols", "shp_UAE","loadOneName","load_folder")])
 
 
-#### DEW COEFFICIENTS ####
 
 
-DEW_coeffi<- stack()
 
-for (kk in 0:11){
-  
-  dawi<- result_monthly[[kk*12+1]]
-  # dawi<- cbind(dawi,coordi_x_y)
-  dawi<- rasterFromXYZ( as.data.frame(dawi)[, c("coord.x","coord.y", "DEW")])
-  names(dawi)<- month.name[(kk+1)]
-  DEW_coeffi<-stack(DEW_coeffi,dawi)
+#####
+
+##### RH coefficents ####
+
+
+data_frame_RH<- data.frame()
+RH_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "RH")])
+  r2_data<- dawi[, c( "RH")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("RH", "month_ind")
+  data_frame_RH<-rbind(data_frame_RH,month_ind)
+  RH_ras_stack<- stack(RH_ras_stack,ras_r2)
 }
 
-max_val<-ceiling(max(maxValue(DEW_coeffi)))
-min_val<-floor(min(minValue(DEW_coeffi)))
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
 
-stat_dat<- summary(as.vector(DEW_coeffi))
+
+data_frame_RH<- cbind(data_frame_RH, month.name[data_frame_RH$month_ind])
+colnames(data_frame_RH)[3]<- "Month"
+
+#### Ploting the WS maps
+
+library(viridis)
+library(lattice)
+
+dir <- "D:/Air Quality/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
+
+max_val<-ceiling(max(maxValue(RH_ras_stack)))
+min_val<-floor(min(minValue(RH_ras_stack)))
+
+stat_dat<- summary(as.vector(RH_ras_stack))
 IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
 
-low_IQR<-floor(as.numeric((stat_dat[2]- IQR)))
-high_IQR<-ceiling(as.numeric((stat_dat[5]+IQR)))
+
+low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
 
 
-vec_all<- as.vector(DEW_coeffi)
+vec_all<- as.vector(RH_ras_stack)
 vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
 
 xxx<- pretty( vec_all, n=10)
 xxx<- (c(min_val, xxx, max_val))
 
-DEW_plot <-DEW_coeffi
-DEW_plot[DEW_plot < low_IQR ]<- low_IQR
-DEW_plot[ DEW_plot >  high_IQR]<- high_IQR
+AOD_plot <-RH_ras_stack
+AOD_plot[AOD_plot < low_IQR ]<- low_IQR
+AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
 
 ## 
 
@@ -1106,8 +1351,8 @@ DEW_plot[ DEW_plot >  high_IQR]<- high_IQR
 
 
 
-h <- rasterVis::levelplot(DEW_plot, 
-                          margin=FALSE, main= "DEW Temp. COEFFICIENTS" ,
+h <- rasterVis::levelplot(AOD_plot, 
+                          margin=FALSE, main= "Relative Humidity Coefficients" ,
                           ## about colorbar
                           colorkey=list(
                             space='right',                   
@@ -1115,7 +1360,7 @@ h <- rasterVis::levelplot(DEW_plot,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title=expression(paste("     ", mu,"g ",m^-3, ~degree~C^-1))
+                            title= expression(paste("     ", mu,"g ",m^-3, "%"^-1 ))
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -1128,13 +1373,12 @@ h <- rasterVis::levelplot(DEW_plot,
                           col.regions = cols,
                           at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
-                          names.attr=rep(names(DEW_plot))) +
+                          names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
 #h
 
 
-
-png(paste0(output_folder,"Coefffi_DEW.png"),
+png(paste0(output_folder,"Coefficients_RH.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
     bg = "white", res = 150)
 print(h)
@@ -1142,193 +1386,6 @@ dev.off()
 
 
 ### plots of histograms
-
-
-#vec_all<- as.vector(AOD_plot)
-png(paste0(output_folder,"hist_DEW.png"),
-    width = 1680, height = 1050, units = "px", pointsize = 30,
-    bg = "white", res = 150)
-print({
-  histogram(vec_all,  breaks=500 , main = paste("Histogram of DEW Temp. Coefficients"), type="percent",
-            xlab= list(expression(beta),cex = 1.5) , ylab=list("%",cex = 1.5 ), col="black", scales=list(cex = 1.5))
-})
-dev.off()
-
-
-rm(list = ls()[!ls() %in% c( "result_monthly", "cols", "shp_UAE","output_folder")])
-
-
-#### TEMP. COEFFICIENTS ####
-
-
-Temp_coeffi<- stack()
-
-for (kk in 0:11){
-  
-  dawi<- result_monthly[[kk*12+1]]
-  # dawi<- cbind(dawi,coordi_x_y)
-  dawi<- rasterFromXYZ( as.data.frame(dawi)[, c("coord.x","coord.y", "temp")])
-  names(dawi)<- month.name[(kk+1)]
-  Temp_coeffi<-stack(Temp_coeffi,dawi)
-}
-
-max_val<-ceiling(max(maxValue(Temp_coeffi)))
-min_val<-floor(min(minValue(Temp_coeffi)))
-
-stat_dat<- summary(as.vector(Temp_coeffi))
-IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
-
-low_IQR<-floor(as.numeric((stat_dat[2]- IQR)))
-high_IQR<-ceiling(as.numeric((stat_dat[5]+IQR)))
-
-
-vec_all<- as.vector(Temp_coeffi)
-vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
-
-xxx<- pretty( vec_all, n=10)
-xxx<- (c(min_val, xxx, max_val))
-
-Temp_plot <-Temp_coeffi
-Temp_plot[Temp_plot < low_IQR ]<- low_IQR
-Temp_plot[ Temp_plot >  high_IQR]<- high_IQR
-
-## 
-
-
-### plots of maps 
-
-
-
-h <- rasterVis::levelplot(Temp_plot, 
-                          margin=FALSE, main= "Temp. COEFFICIENTS" ,
-                          ## about colorbar
-                          colorkey=list(
-                            space='right',                   
-                            labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
-                                         font=3),
-                            axis.line=list(col='black'),
-                            width=0.75,
-                            title=expression(paste("     ", mu,"g ",m^-3, ~degree~C^-1))
-                          ),   
-                          ## about the axis
-                          par.settings=list(
-                            strip.border=list(col='transparent'),
-                            strip.background=list(col='transparent'),
-                            axis.line=list(col='black')
-                          ),
-                          scales=list(draw=T, alternating= F),            
-                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
-                          col.regions = cols,
-                          at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
-                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
-                          names.attr=rep(names(Temp_plot))) +
-  latticeExtra::layer(sp.polygons(shp_UAE))
-#h
-
-
-
-png(paste0(output_folder,"Coefffi_temp.png"),
-    width = 1680, height = 1050, units = "px", pointsize = 30,
-    bg = "white", res = 150)
-print(h)
-dev.off()
-
-
-### plots of histograms
-
-
-#vec_all<- as.vector(AOD_plot)
-png(paste0(output_folder,"hist_temp.png"),
-    width = 1680, height = 1050, units = "px", pointsize = 30,
-    bg = "white", res = 150)
-print({
-  histogram(vec_all,  breaks=500 , main = paste("Histogram of Temp. Coefficients"), type="percent",
-            xlab= list(expression(beta),cex = 1.5) , ylab=list("%",cex = 1.5 ), col="black", scales=list(cex = 1.5))
-})
-dev.off()
-
-
-rm(list = ls()[!ls() %in% c( "result_monthly", "cols", "shp_UAE","output_folder")])
-
-
-#### RH COEFFICIENTS ####
-
-
-RH_coeffi<- stack()
-
-for (kk in 0:11){
-  
-  dawi<- result_monthly[[kk*12+1]]
-  # dawi<- cbind(dawi,coordi_x_y)
-  dawi<- rasterFromXYZ( as.data.frame(dawi)[, c("coord.x","coord.y", "RH")])
-  names(dawi)<- month.name[(kk+1)]
-  RH_coeffi<-stack(RH_coeffi,dawi)
-}
-
-max_val<-ceiling(max(maxValue(RH_coeffi)))
-min_val<-floor(min(minValue(RH_coeffi)))
-
-stat_dat<- summary(as.vector(RH_coeffi))
-IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
-
-low_IQR<-floor(as.numeric((stat_dat[2]- IQR)))
-high_IQR<-ceiling(as.numeric((stat_dat[5]+IQR)))
-
-
-vec_all<- as.vector(RH_coeffi)
-vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
-
-xxx<- pretty( vec_all, n=10)
-xxx<- (c(min_val, xxx, max_val))
-
-RH_plot <-RH_coeffi
-RH_plot[RH_plot < low_IQR ]<- low_IQR
-RH_plot[ RH_plot >  high_IQR]<- high_IQR
-
-## 
-
-
-### plots of maps 
-
-
-
-h <- rasterVis::levelplot(RH_plot, 
-                          margin=FALSE, main= "Relative Humidity COEFFICIENTS" ,
-                          ## about colorbar
-                          colorkey=list(
-                            space='right',                   
-                            labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
-                                         font=3),
-                            axis.line=list(col='black'),
-                            width=0.75,
-                            title=expression(paste("     ", mu,"g ",m^-3))
-                          ),   
-                          ## about the axis
-                          par.settings=list(
-                            strip.border=list(col='transparent'),
-                            strip.background=list(col='transparent'),
-                            axis.line=list(col='black')
-                          ),
-                          scales=list(draw=T, alternating= F),            
-                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
-                          col.regions = cols,
-                          at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
-                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
-                          names.attr=rep(names(RH_plot))) +
-  latticeExtra::layer(sp.polygons(shp_UAE))
-#h
-
-
-
-png(paste0(output_folder,"Coefffi_RH.png"),
-    width = 1680, height = 1050, units = "px", pointsize = 30,
-    bg = "white", res = 150)
-print(h)
-dev.off()
-
-
-### plots of histograms
-
 
 #vec_all<- as.vector(AOD_plot)
 png(paste0(output_folder,"hist_RH.png"),
@@ -1341,43 +1398,70 @@ print({
 dev.off()
 
 
-rm(list = ls()[!ls() %in% c( "result_monthly", "cols", "shp_UAE","output_folder")])
+
+
+rm(list = ls()[!ls() %in% c( "output_folder", "cols", "shp_UAE","loadOneName","load_folder")])
 
 
 
-#### Prediction COEFFICIENTS ####
+#####
+
+##### DEW coefficents ####
 
 
-Pre_coeffi<- stack()
-
-for (kk in 0:11){
-  
-  dawi<- result_monthly[[kk*12+1]]
-  # dawi<- cbind(dawi,coordi_x_y)
-  dawi<- rasterFromXYZ( as.data.frame(dawi)[, c("coord.x","coord.y", "pred")])
-  names(dawi)<- month.name[(kk+1)]
-  Pre_coeffi<-stack(Pre_coeffi,dawi)
+data_frame_DEW<- data.frame()
+DEW_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "DEW")])
+  r2_data<- dawi[, c( "DEW")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("DEW", "month_ind")
+  data_frame_DEW<-rbind(data_frame_DEW,month_ind)
+  DEW_ras_stack<- stack(DEW_ras_stack,ras_r2)
 }
 
-max_val<-ceiling(max(maxValue(Pre_coeffi)))
-min_val<-floor(min(minValue(Pre_coeffi)))
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
 
-stat_dat<- summary(as.vector(Pre_coeffi))
+
+data_frame_DEW<- cbind(data_frame_DEW, month.name[data_frame_DEW$month_ind])
+colnames(data_frame_DEW)[3]<- "Month"
+
+#### Ploting the WS maps
+
+library(viridis)
+library(lattice)
+
+dir <- "D:/Air Quality/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
+
+max_val<-ceiling(max(maxValue(DEW_ras_stack)))
+min_val<-floor(min(minValue(DEW_ras_stack)))
+
+stat_dat<- summary(as.vector(DEW_ras_stack))
 IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
 
-low_IQR<-floor(as.numeric((stat_dat[2]- IQR)))
-high_IQR<-ceiling(as.numeric((stat_dat[5]+IQR)))
+
+low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
 
 
-vec_all<- as.vector(Pre_coeffi)
+vec_all<- as.vector(DEW_ras_stack)
 vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
 
 xxx<- pretty( vec_all, n=10)
 xxx<- (c(min_val, xxx, max_val))
 
-pre_plot <-Pre_coeffi
-pre_plot[pre_plot < low_IQR ]<- low_IQR
-pre_plot[ pre_plot >  high_IQR]<- high_IQR
+AOD_plot <-DEW_ras_stack
+AOD_plot[AOD_plot < low_IQR ]<- low_IQR
+AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
 
 ## 
 
@@ -1386,8 +1470,8 @@ pre_plot[ pre_plot >  high_IQR]<- high_IQR
 
 
 
-h <- rasterVis::levelplot(pre_plot, 
-                          margin=FALSE, main= "Prediction PM2.5 " ,
+h <- rasterVis::levelplot(AOD_plot, 
+                          margin=FALSE, main= "DEW Temprature Coefficients" ,
                           ## about colorbar
                           colorkey=list(
                             space='right',                   
@@ -1395,7 +1479,7 @@ h <- rasterVis::levelplot(pre_plot,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title=expression(paste("     ", mu,"g ",m^-3))
+                            title=expression(paste("     ", mu,"g ",m^-3, ~degree~C^-1))
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -1408,13 +1492,12 @@ h <- rasterVis::levelplot(pre_plot,
                           col.regions = cols,
                           at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
-                          names.attr=rep(names(pre_plot))) +
+                          names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
 #h
 
 
-
-png(paste0(output_folder,"Coefffi_Pred.png"),
+png(paste0(output_folder,"Coefficients_DEW.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
     bg = "white", res = 150)
 print(h)
@@ -1423,55 +1506,84 @@ dev.off()
 
 ### plots of histograms
 
-
 #vec_all<- as.vector(AOD_plot)
-png(paste0(output_folder,"hist_pred.png"),
+png(paste0(output_folder,"hist_DEW.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
     bg = "white", res = 150)
 print({
-  histogram(vec_all,  breaks=500 , main = paste("Histogram of Predition of PM2.5"), type="percent",
-            xlab= list("PM2.5",cex = 1.5) , ylab=list("%",cex = 1.5 ), col="black", scales=list(cex = 1.5))
+  histogram(vec_all,  breaks=500 , main = paste("Histogram of DEW Temprature Coefficients"), type="percent",
+            xlab= list(expression(beta),cex = 1.5) , ylab=list("%",cex = 1.5 ), col="black", scales=list(cex = 1.5))
 })
 dev.off()
 
 
-rm(list = ls()[!ls() %in% c( "result_monthly", "cols", "shp_UAE", "output_folder")])
+
+
+rm(list = ls()[!ls() %in% c( "output_folder", "cols", "shp_UAE","loadOneName","load_folder")])
 
 
 
-#### Intercept ####
 
 
-intercept_coeffi<- stack()
 
-for (kk in 0:11){
-  
-  dawi<- result_monthly[[kk*12+1]]
-  # dawi<- cbind(dawi,coordi_x_y)
-  dawi<- rasterFromXYZ( as.data.frame(dawi)[, c("coord.x","coord.y", "X.Intercept.")])
-  names(dawi)<- month.name[(kk+1)]
-  intercept_coeffi<-stack(intercept_coeffi,dawi)
+#####
+
+##### Intercept coefficents ####
+
+
+data_frame_intercept<- data.frame()
+Intercept_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "X.Intercept.")])
+  r2_data<- dawi[, c( "X.Intercept.")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("Intercept", "month_ind")
+  data_frame_intercept<-rbind(data_frame_intercept,month_ind)
+  Intercept_ras_stack<- stack(Intercept_ras_stack,ras_r2)
 }
 
-max_val<-ceiling(max(maxValue(intercept_coeffi)))
-min_val<-floor(min(minValue(intercept_coeffi)))
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
 
-stat_dat<- summary(as.vector(intercept_coeffi))
+
+data_frame_intercept<- cbind(data_frame_intercept, month.name[data_frame_intercept$month_ind])
+colnames(data_frame_intercept)[3]<- "Month"
+
+#### Ploting the WS maps
+
+library(viridis)
+library(lattice)
+
+dir <- "D:/Air Quality/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
+
+max_val<-ceiling(max(maxValue(Intercept_ras_stack)))
+min_val<-floor(min(minValue(Intercept_ras_stack)))
+
+stat_dat<- summary(as.vector(Intercept_ras_stack))
 IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
 
-low_IQR<-floor(as.numeric((stat_dat[2]- IQR)))
-high_IQR<-ceiling(as.numeric((stat_dat[5]+IQR)))
+
+low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
 
 
-vec_all<- as.vector(intercept_coeffi)
+vec_all<- as.vector(Intercept_ras_stack)
 vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
 
 xxx<- pretty( vec_all, n=10)
 xxx<- (c(min_val, xxx, max_val))
 
-intercept_plot <-intercept_coeffi
-intercept_plot[intercept_plot < low_IQR ]<- low_IQR
-intercept_plot[ intercept_plot >  high_IQR]<- high_IQR
+AOD_plot <-Intercept_ras_stack
+AOD_plot[AOD_plot < low_IQR ]<- low_IQR
+AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
 
 ## 
 
@@ -1480,8 +1592,8 @@ intercept_plot[ intercept_plot >  high_IQR]<- high_IQR
 
 
 
-h <- rasterVis::levelplot(intercept_plot, 
-                          margin=FALSE, main= "Intercept (Error)" ,
+h <- rasterVis::levelplot(AOD_plot, 
+                          margin=FALSE, main= "Intercept" ,
                           ## about colorbar
                           colorkey=list(
                             space='right',                   
@@ -1489,7 +1601,7 @@ h <- rasterVis::levelplot(intercept_plot,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title=expression(paste("     ", mu,"g ",m^-3))
+                            title=expression(paste("     ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -1502,13 +1614,12 @@ h <- rasterVis::levelplot(intercept_plot,
                           col.regions = cols,
                           at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
-                          names.attr=rep(names(intercept_plot))) +
+                          names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
 #h
 
 
-
-png(paste0(output_folder,"Coefffi_Intercept.png"),
+png(paste0(output_folder,"Coefficients_intercept.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
     bg = "white", res = 150)
 print(h)
@@ -1516,74 +1627,109 @@ dev.off()
 
 
 ### plots of histograms
-
 
 #vec_all<- as.vector(AOD_plot)
 png(paste0(output_folder,"hist_Intercept.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
     bg = "white", res = 150)
 print({
-  histogram(vec_all,  breaks=500 , main = paste("Histogram of Intercept (Error)"), type="percent",
+  histogram(vec_all,  breaks=500 , main = paste("Histogram of Intercepts"), type="percent",
             xlab= list(expression(beta),cex = 1.5) , ylab=list("%",cex = 1.5 ), col="black", scales=list(cex = 1.5))
 })
 dev.off()
 
 
-rm(list = ls()[!ls() %in% c( "result_monthly", "cols", "shp_UAE","output_folder")])
+
+
+rm(list = ls()[!ls() %in% c( "output_folder", "cols", "shp_UAE","loadOneName","load_folder")])
 
 
 
-######
-
-###### BIAS ######
-
-load("D:/Air Quality/GWR_with_met/Monitoring/Moni_PM25_mean_monthly_2015.RData")
 
 
-Pre_coeffi<- stack()
 
-for (kk in 0:11){
-  
-  dawi<- result_monthly[[kk*12+1]]
-  # dawi<- cbind(dawi,coordi_x_y)
-  dawi<- rasterFromXYZ( as.data.frame(dawi)[, c("coord.x","coord.y", "pred")])
-  names(dawi)<- month.name[(kk+1)]
-  Pre_coeffi<-stack(Pre_coeffi,dawi)
-}
 
-BIAS_coeffi<- stack()
+#####
 
+##### Prediction & measured maps ####
+
+data_frame_predict<- data.frame()
+pred_ras_stack<- stack()
 for (kk in 1:12){
-  
-  
-  crs(Pre_coeffi[[month.name[kk]]])<- " +proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
-  r_moni<- projectRaster(from=Total_monitoring_PM25[[month.name[kk]]],to=Pre_coeffi[[month.name[kk]]])
-  dawi<- r_moni-Pre_coeffi[[month.name[kk]]]
-  names(dawi)<- month.name[kk]
-  BIAS_coeffi<-stack(BIAS_coeffi,dawi)
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "pred")])
+  r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("Predicted", "month_ind")
+  data_frame_predict<-rbind(data_frame_predict,month_ind)
+  pred_ras_stack<- stack(pred_ras_stack,ras_r2)
 }
 
-max_val<-ceiling(max(maxValue(BIAS_coeffi)))
-min_val<-floor(min(minValue(BIAS_coeffi)))
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
 
-stat_dat<- summary(as.vector(BIAS_coeffi))
-# IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2]))*20)# n is the space after IQR
- IQR<- floor(as.numeric((stat_dat[6]-stat_dat[1])))# n is the space after IQR
 
-# low_IQR<-floor(as.numeric((stat_dat[2]- IQR)))
-# high_IQR<-ceiling(as.numeric((stat_dat[5]+IQR)))
- low_IQR<-floor(as.numeric((stat_dat[1])))
- high_IQR<- ceiling(as.numeric((stat_dat[6])))
+data_frame_predict<- cbind(data_frame_predict, month.name[data_frame_predict$month_ind])
+colnames(data_frame_predict)[3]<- "Month"
 
-vec_all<- as.vector(BIAS_coeffi)
+#### monitoring 
+
+load(paste(load_folder,"Input_mydata_file.RData", sep=""))
+
+Moni_ras_stack<-stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("Input_data_", month.name[kk] , sep = "")
+  # model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  
+  assign("dawi", eval(parse(text = paste("Input_data_", month.name[kk] , sep = ""))) )
+  
+  ras_r2<- rasterFromXYZ( dawi[, c("x","y", "Moni")])
+  #r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  # month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  # colnames(month_ind)<-c("Predicted", "month_ind")
+  # data_frame_predict<-rbind(data_frame_predict,month_ind)
+  Moni_ras_stack<- stack(Moni_ras_stack,ras_r2)
+}
+
+
+
+#### Ploting the WS maps
+
+library(viridis)
+library(lattice)
+
+dir <- "D:/Air Quality/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
+
+max_val<-ceiling(max(maxValue(pred_ras_stack)))
+min_val<-floor(min(minValue(pred_ras_stack)))
+
+stat_dat<- summary(as.vector(pred_ras_stack))
+IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 4))# n is the space after IQR
+
+low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
+  
+
+
+vec_all<- as.vector(pred_ras_stack)
+vec_all_measured<- as.vector(Moni_ras_stack)
 #vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
 
 xxx<- pretty( vec_all, n=10)
 xxx<- (c(min_val, xxx, max_val))
 
-BIAS_plot <-BIAS_coeffi
-# BIAS_plot[BIAS_plot < low_IQR ]<- low_IQR
-# BIAS_plot[ BIAS_plot >  high_IQR]<- high_IQR
+AOD_plot <-pred_ras_stack
+#AOD_plot[AOD_plot < low_IQR ]<- low_IQR
+#AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
 
 ## 
 
@@ -1592,8 +1738,11 @@ BIAS_plot <-BIAS_coeffi
 
 
 
-h <- rasterVis::levelplot(BIAS_plot, 
-                          margin=FALSE, main= "BIAS" ,
+
+#### predicted
+
+h <- rasterVis::levelplot(AOD_plot, 
+                          margin=FALSE, main= "Predicted PM2.5" ,
                           ## about colorbar
                           colorkey=list(
                             space='right',                   
@@ -1601,7 +1750,7 @@ h <- rasterVis::levelplot(BIAS_plot,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title=expression(paste("     ", mu,"g ",m^-3))
+                            title= expression(paste("     ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -1614,13 +1763,199 @@ h <- rasterVis::levelplot(BIAS_plot,
                           col.regions = cols,
                           at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
-                          names.attr=rep(names(BIAS_plot))) +
+                          names.attr=rep(names(AOD_plot))) +
+  latticeExtra::layer(sp.polygons(shp_UAE))
+#h
+
+### monitoring
+
+h_moni <- rasterVis::levelplot(Moni_ras_stack, 
+                          margin=FALSE, main= "Measured PM2.5" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("     ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
+                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                          names.attr=rep(names(Moni_ras_stack))) +
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+
+
+#### predicted
+
+png(paste0(output_folder,"Predicted_pm25.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+### monitoring
+png(paste0(output_folder,"measured_pm25.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h_moni)
+dev.off()
+
+
+### plots of histograms
+
+#vec_all<- as.vector(AOD_plot)
+png(paste0(output_folder,"hist_predicted.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print({
+  histogram(vec_all,  breaks=500 , main = paste("Histogram of Predicted PM2.5"), type="percent",
+            xlab= list(expression(beta),cex = 1.5) , ylab=list("%",cex = 1.5 ), col="black", scales=list(cex = 1.5))
+})
+dev.off()
+
+
+png(paste0(output_folder,"hist_measured.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print({
+  histogram(vec_all_measured,  breaks=500 , main = paste("Histogram of Measured PM2.5"), type="percent",
+            xlab= list(expression(beta),cex = 1.5) , ylab=list("%",cex = 1.5 ), col="black", scales=list(cex = 1.5))
+})
+dev.off()
+
+
+
+rm(list = ls()[!ls() %in% c( "output_folder", "cols", "shp_UAE","loadOneName","load_folder")])
+
+
+
+#####
+
+###### BIAS ######
+
+data_frame_predict<- data.frame()
+pred_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "pred")])
+  r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("Predicted", "month_ind")
+  data_frame_predict<-rbind(data_frame_predict,month_ind)
+  pred_ras_stack<- stack(pred_ras_stack,ras_r2)
+}
+
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
+
+
+data_frame_predict<- cbind(data_frame_predict, month.name[data_frame_predict$month_ind])
+colnames(data_frame_predict)[3]<- "Month"
+
+### building a raster from the monitoring
+
+load(paste(load_folder,"Input_mydata_file.RData", sep=""))
+
+Moni_ras_stack<-stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("Input_data_", month.name[kk] , sep = "")
+  # model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  
+  assign("dawi", eval(parse(text = paste("Input_data_", month.name[kk] , sep = ""))) )
+  
+  ras_r2<- rasterFromXYZ( dawi[, c("x","y", "Moni")])
+  #r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  # month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  # colnames(month_ind)<-c("Predicted", "month_ind")
+  # data_frame_predict<-rbind(data_frame_predict,month_ind)
+  Moni_ras_stack<- stack(Moni_ras_stack,ras_r2)
+}
+
+BIAS<- Moni_ras_stack-pred_ras_stack
+
+#### Ploting the WS maps
+
+library(viridis)
+library(lattice)
+
+dir <- "D:/Air Quality/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
+
+max_val<-ceiling(max(maxValue(BIAS)))
+min_val<-floor(min(minValue(BIAS)))
+
+stat_dat<- summary(as.vector(BIAS))
+IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 20))# n is the space after IQR
+
+
+low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
+
+
+vec_all<- as.vector(BIAS)
+#vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
+
+xxx<- pretty( vec_all, n=10)
+xxx<- (c(min_val, xxx, max_val))
+
+AOD_plot <-BIAS
+AOD_plot[AOD_plot < low_IQR ]<- low_IQR
+AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
+
+## 
+
+
+### plots of maps 
+
+
+
+h <- rasterVis::levelplot(AOD_plot, 
+                          margin=FALSE, main= "BIAS (Monitoring- Predicted)" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("     ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
+                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                          names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
 #h
 
 
-
-png(paste0(output_folder,"Coefffi_BIAS.png"),
+png(paste0(output_folder,"BIAS.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
     bg = "white", res = 150)
 print(h)
@@ -1628,7 +1963,6 @@ dev.off()
 
 
 ### plots of histograms
-
 
 #vec_all<- as.vector(AOD_plot)
 png(paste0(output_folder,"hist_BIAS.png"),
@@ -1641,138 +1975,1273 @@ print({
 dev.off()
 
 
-rm(list = ls()[!ls() %in% c( "result_monthly", "cols", "shp_UAE","output_folder")])
+
+
+rm(list = ls()[!ls() %in% c( "output_folder", "cols", "shp_UAE","loadOneName","load_folder")])
 
 
 
 
-#DEW
+
+# if (names(AOD_plot) %in% c("sum.w","X.Intercept.", "AOD_mean", "X.Intercept._se" ,"AOD_mean_se",
+#                            "gwr.e", "pred","pred.se","X.Intercept._se_EDF","AOD_mean_se_EDF", "pred.se_EDF"  )) {
+#   unit_to<- expression(paste("     ", mu,"g ",m^-3) )
+# }
+# if ( names(AOD_plot) %in% c( "wind_speed", "wind_speed_se", "wind_speed_se_EDF" ) ){
+#   unit_to<- expression(paste("     ", mu,"g ",m^-3,"/(m ", sec^-1,")"))
+# }
+# if (  names(AOD_plot) %in% c("DEW","DEW_se" , "DEW_se_EDF")){
+#   unit_to<- expression(paste("     ", mu,"g ",m^-3, ~degree~C^-1))
+# }
+# if ( names(AOD_plot) %in% c( "RH", "RH_se","RH_se_EDF" )  ){
+#   unit_to<- expression(paste("     ", mu,"g ",m^-3, "%"^-1 ))
+# }
+# if ( names(AOD_plot) %in% c( "localR2" )  ){
+#   unit_to<- NULL
+# }
+# 
+# 
+
+
 
 #####
 
 
+###### impact of the Coefficients ##### 
 
-setwd("D:/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data")
-setwd("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data")
-path <- ".csv$"
-filenames_hourly_NCMS <- list.files(pattern = path)
+#### LOADING THE RESULT WORKSPACE
 
-setwd("D:/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data/rasters")
-setwd("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data/rasters")
-
-# temperature
-# NCMS_DRY_TEMP_STACK_image <- stack("Dry_Temperature_NCMS_1km_new.tif")
+output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/"
+load_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
 
 
-# radiation
-NCMS_DRY_TEMP_STACK_image <- stack("Irradiation_W_m2_NCMS_1km.tif")/3.6
-NCMS_DRY_TEMP_STACK_image[NCMS_DRY_TEMP_STACK_image < 0] <- 0
-
-# wind speed
-# NCMS_DRY_TEMP_STACK_image <- stack("Wind_Speed_NCMS_1km.tif")
-
-
-# plot(NCMS_DRY_TEMP_STACK_image[[34]])
-
-# i <- 83
-# j <- 83
-
-# min_val <- 9.256
-# max_val <- 44
-
-vec_all <- as.vector(NCMS_DRY_TEMP_STACK_image)
-
-max_val<- ceiling(max(vec_all, na.rm = T))
-min_val<- floor(min(vec_all,  na.rm = T))
+loadOneName <- function(objName, file, envir = parent.frame(),
+                        assign.on.exit = TRUE) {
+  tempEnv <- new.env()
+  load(file, envir = tempEnv)
+  stopifnot(objName %in% ls(tempEnv))
+  if(assign.on.exit) {
+    assign(objName, tempEnv[[objName]], envir = envir)
+    return(invisible(tempEnv[[objName]]))
+  }
+  tempEnv[[objName]]
+}
 
 
-stat_dat <- summary(vec_all)
-IQR <- floor(as.numeric((stat_dat[5]-stat_dat[2])* 1.5))# n is the space after IQR
+data_frame_predict<- data.frame()
+pred_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "pred")])
+  r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("Predicted", "month_ind")
+  data_frame_predict<-rbind(data_frame_predict,month_ind)
+  pred_ras_stack<- stack(pred_ras_stack,ras_r2)
+}
 
-low_IQR <-floor(as.numeric((stat_dat[2]- IQR)))
-high_IQR <-floor(as.numeric((stat_dat[5]+IQR)))
+#### AOD Coefficient
+
+data_frame_AOD<- data.frame()
+AOD_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "AOD_mean")])
+  r2_data<- dawi[, c( "AOD_mean")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("AOD_mean", "month_ind")
+  data_frame_AOD<-rbind(data_frame_AOD,month_ind)
+  AOD_ras_stack<- stack(AOD_ras_stack,ras_r2)
+}
+
+##### Wind Speed coefficents
+
+data_frame_WS<- data.frame()
+WS_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "wind_speed")])
+  r2_data<- dawi[, c( "wind_speed")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("wind_speed", "month_ind")
+  data_frame_WS<-rbind(data_frame_WS,month_ind)
+  WS_ras_stack<- stack(WS_ras_stack,ras_r2)
+}
+
+##### RH coefficents 
+
+data_frame_RH<- data.frame()
+RH_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "RH")])
+  r2_data<- dawi[, c( "RH")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("RH", "month_ind")
+  data_frame_RH<-rbind(data_frame_RH,month_ind)
+  RH_ras_stack<- stack(RH_ras_stack,ras_r2)
+}
+
+##### DEW coefficents 
+
+data_frame_DEW<- data.frame()
+DEW_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "DEW")])
+  r2_data<- dawi[, c( "DEW")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("DEW", "month_ind")
+  data_frame_DEW<-rbind(data_frame_DEW,month_ind)
+  DEW_ras_stack<- stack(DEW_ras_stack,ras_r2)
+}
+
+##### Intercept coefficents 
+
+data_frame_intercept<- data.frame()
+Intercept_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "X.Intercept.")])
+  r2_data<- dawi[, c( "X.Intercept.")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("Intercept", "month_ind")
+  data_frame_intercept<-rbind(data_frame_intercept,month_ind)
+  Intercept_ras_stack<- stack(Intercept_ras_stack,ras_r2)
+}
+
+impact_AOD<- stack()
+impact_WS<- stack( )
+impact_DEW<- stack( )
+impact_RH<- stack()
+impact_CON<- stack( )
+ 
+for( qq in 1:12){
+#qq=1
+
+nam <- paste("Input_data_", month.name[qq] , sep = "")
+mydata <- loadOneName( eval(nam), file=paste0(load_folder, "Input_mydata_file.RData"))
 
 
-vec_all_1 <- vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
+### AOD impact
+AOD_impact<- cbind( mydata$x, mydata$y, (mydata$AOD_mean* na.omit(as.data.frame(AOD_ras_stack[[qq]]))))
+names(AOD_impact)<-  c("x", "y", "AOD_Impa")
+AOD_coeffi_val <- rasterFromXYZ(AOD_impact[, c("x", "y", "AOD_Impa")])
+names(AOD_coeffi_val)<- month.name[qq]
+#plot(AOD_coeffi_val)
 
-xxx<- pretty( vec_all_1, n=15)
+### WS impact
+
+WS_impact<- cbind( mydata$x, mydata$y, (mydata$wind_speed* na.omit(as.data.frame(WS_ras_stack[[qq]]))))
+names(WS_impact)<-  c("x", "y", "WS")
+WS_coeffi_val <- rasterFromXYZ(WS_impact[, c("x", "y", "WS")])
+names(WS_coeffi_val)<- month.name[qq]
+#plot(WS_coeffi_val)
+
+### DEW impact
+
+DEW_impact<- cbind( mydata$x, mydata$y, (mydata$DEW * na.omit(as.data.frame(DEW_ras_stack[[qq]]))))
+names(DEW_impact)<-  c("x", "y", "DEW")
+DEW_coeffi_val <- rasterFromXYZ(DEW_impact[, c("x", "y", "DEW")])
+names(DEW_coeffi_val)<- month.name[qq]
+#plot(DEW_coeffi_val)
+
+### RH impact
+
+RH_impact<- cbind( mydata$x, mydata$y, (mydata$RH * na.omit(as.data.frame(RH_ras_stack[[qq]]))))
+names(RH_impact)<-  c("x", "y", "RH")
+RH_coeffi_val <- rasterFromXYZ(RH_impact[, c("x", "y", "RH")])
+names(RH_coeffi_val)<- month.name[qq]
+#plot(RH_coeffi_val)
+
+### Constant impact
+
+CON_impact<- cbind( mydata$x, mydata$y, (na.omit(as.data.frame(Intercept_ras_stack[[qq]]))))
+names(CON_impact)<-  c("x", "y", "CON")
+CON_coeffi_val <- rasterFromXYZ(CON_impact[, c("x", "y", "CON")])
+names(CON_coeffi_val)<- month.name[qq]
+#plot(CON_coeffi_val)
+
+
+impact_AOD<- stack(impact_AOD, AOD_coeffi_val )
+impact_WS<- stack(impact_WS, WS_coeffi_val )
+impact_DEW<- stack(impact_DEW, DEW_coeffi_val )
+impact_RH<- stack(impact_RH, RH_coeffi_val )
+impact_CON<- stack(impact_CON, CON_coeffi_val )
+}
+
+
+
+vec_majority<- function(impact_AOD=impact_AOD , IQRD=4){
+  
+  max_val<-ceiling(max(maxValue(mean(impact_AOD))))
+  min_val<-floor(min(minValue(mean(impact_AOD))))
+  
+  vec_AOD<-  as.vector(na.omit(as.vector(mean(impact_AOD))))
+  stat_dat<- summary(as.vector(vec_AOD))
+  IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])*IQRD))# n is the space after IQR
+  
+  low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+  high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
+  vec_AOD<-vec_AOD[ vec_AOD >= low_IQR & vec_AOD <= high_IQR & !is.na(vec_AOD) ]
+  AOD_plot <-mean(impact_AOD)
+  AOD_plot[AOD_plot < low_IQR ]<- low_IQR
+  AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
+  return(AOD_plot)
+}
+
+
+vec_AOD<-  vec_majority(impact_AOD=impact_AOD)
+vec_WS<-  vec_majority(impact_WS)
+vec_DEW<-  vec_majority(impact_DEW)
+vec_RH<-  vec_majority(impact_RH)
+vec_CON<-  vec_majority(impact_CON)
+
+
+####### plots of the IMPACT of the Coefficients
+
+
+
+h <- rasterVis::levelplot(vec_AOD, 
+                          margin=FALSE, main= "AOD Impact" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(minValue(vec_AOD), maxValue(vec_AOD), length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("      ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(minValue(vec_AOD), maxValue(vec_AOD), length.out=200))),
+                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                          #names.attr=rep(names(AOD_plot))
+                          ) +
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+png(paste0(output_folder,"AOD_impact.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+####### WS
+
+
+
+h <- rasterVis::levelplot(vec_WS, 
+                          margin=FALSE, main= "WS Impact" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(minValue(vec_WS), maxValue(vec_WS), length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("      ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(minValue(vec_WS), maxValue(vec_WS), length.out=200))),
+                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                          #names.attr=rep(names(AOD_plot))
+) +
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+png(paste0(output_folder,"WS_impact.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+####### DEW
+
+
+
+h <- rasterVis::levelplot(vec_DEW, 
+                          margin=FALSE, main= "DEW Impact" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(minValue(vec_DEW), maxValue(vec_DEW), length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("      ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(minValue(vec_DEW), maxValue(vec_DEW), length.out=200))),
+                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                          #names.attr=rep(names(AOD_plot))
+) +
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+png(paste0(output_folder,"DEW_impact.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+####### RH
+
+
+
+h <- rasterVis::levelplot(vec_RH, 
+                          margin=FALSE, main= "RH Impact" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(minValue(vec_RH), maxValue(vec_RH), length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("      ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(minValue(vec_RH), maxValue(vec_RH), length.out=200))),
+                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                          #names.attr=rep(names(AOD_plot))
+) +
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+png(paste0(output_folder,"RH_impact.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+####### CON
+
+
+
+h <- rasterVis::levelplot(vec_CON, 
+                          margin=FALSE, main= "Intercept Impact" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(minValue(vec_CON), maxValue(vec_CON), length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("      ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(minValue(vec_CON), maxValue(vec_CON), length.out=200))),
+                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                          #names.attr=rep(names(AOD_plot))
+) +
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+png(paste0(output_folder,"CON_impact.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+
+
+
+plot( vec_WS)
+plot( mean(impact_DEW))
+plot( mean(impact_RH))
+plot( mean(impact_CON))
+
+
+
+#####
+
+
+###### SEASONAL ANALYSIS #####
+
+output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/"
+load_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+
+
+loadOneName <- function(objName, file, envir = parent.frame(),
+                        assign.on.exit = TRUE) {
+  tempEnv <- new.env()
+  load(file, envir = tempEnv)
+  stopifnot(objName %in% ls(tempEnv))
+  if(assign.on.exit) {
+    assign(objName, tempEnv[[objName]], envir = envir)
+    return(invisible(tempEnv[[objName]]))
+  }
+  tempEnv[[objName]]
+}
+
+
+data_frame_predict<- data.frame()
+pred_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "pred")])
+  r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("Predicted", "month_ind")
+  data_frame_predict<-rbind(data_frame_predict,month_ind)
+  pred_ras_stack<- stack(pred_ras_stack,ras_r2)
+}
+
+
+### building a raster from the monitoring
+
+load(paste(load_folder,"Input_mydata_file.RData", sep=""))
+
+Moni_ras_stack<-stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("Input_data_", month.name[kk] , sep = "")
+  # model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  
+  assign("dawi", eval(parse(text = paste("Input_data_", month.name[kk] , sep = ""))) )
+  
+  ras_r2<- rasterFromXYZ( dawi[, c("x","y", "Moni")])
+  #r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  # month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  # colnames(month_ind)<-c("Predicted", "month_ind")
+  # data_frame_predict<-rbind(data_frame_predict,month_ind)
+  Moni_ras_stack<- stack(Moni_ras_stack,ras_r2)
+}
+
+
+
+###### MARCH - MAY #####
+
+pre_mam<- mean(pred_ras_stack[[3:5]])
+names(pre_mam)<- "March-May"
+moni_mam<- mean(Moni_ras_stack[[3:5]])
+names(moni_mam)<- "March-May"
+
+estim<- as.vector(na.omit(values(pre_mam)))
+moni<-  as.vector(na.omit(values(moni_mam)))
+
+r_2<-   sum((estim-mean(moni) )^2)/
+  sum((moni-mean(moni))^2)
+
+png(paste0(output_folder,"seasonal_mam.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+    bg = "white", res = 150)
+par(mar=c(4,4.5,2,1), pty="s")
+print({
+  
+  plot(values(moni_mam), values(pre_mam), xlim=c(5,80), ylim=c(5,80), 
+       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "March-May")
+  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 1.2)))
+  abline(0,1,lwd=2, col="black")
+  
+})
+dev.off()
+
+
+
+
+
+
+######
+
+
+#### June - AUGUST  #####
+
+pre_jja<- mean(pred_ras_stack[[6:8]])
+names(pre_jja)<- "June-August"
+moni_jja<- mean(Moni_ras_stack[[6:8]])
+names(moni_jja)<- "June-August"
+
+estim<- as.vector(na.omit(values(pre_jja)))
+moni<-  as.vector(na.omit(values(moni_jja)))
+
+r_2<-   sum((estim-mean(moni) )^2)/
+  sum((moni-mean(moni))^2)
+
+png(paste0(output_folder,"seasonal_jja.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+    bg = "white", res = 150)
+par(mar=c(4,4.5,2,1), pty="s")
+print({
+  
+  plot(values(moni_jja), values(pre_jja), xlim=c(5,80), ylim=c(5,80), 
+       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "June-August")
+  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 1.2)))
+  abline(0,1,lwd=2, col="black")
+  
+})
+dev.off()
+
+######
+
+
+#### September - November  #####
+
+pre_son<- mean(pred_ras_stack[[9:11]])
+names(pre_son)<- "September - November"
+moni_son<- mean(Moni_ras_stack[[9:11]])
+names(moni_son)<- "September - November"
+
+estim<- as.vector(na.omit(values(pre_son)))
+moni<-  as.vector(na.omit(values(moni_son)))
+
+r_2<-   sum((estim-mean(moni) )^2)/
+  sum((moni-mean(moni))^2)
+
+png(paste0(output_folder,"seasonal_son.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+    bg = "white", res = 150)
+par(mar=c(4,4.5,2,1), pty="s")
+print({
+  
+  plot(values(moni_son), values(pre_son), xlim=c(5,80), ylim=c(5,80), 
+       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "September - November")
+  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 1.2)))
+  abline(0,1,lwd=2, col="black")
+  
+})
+dev.off()
+
+######
+
+
+
+#### December - February  #####
+
+pre_djf<- mean(pred_ras_stack[[c(1:2,12)]])
+names(pre_djf)<- "December - February"
+moni_djf<- mean(Moni_ras_stack[[c(1:2,12)]])
+names(moni_djf)<- "December - February"
+
+estim<- as.vector(na.omit(values(pre_djf)))
+moni<-  as.vector(na.omit(values(moni_djf)))
+
+r_2<-   sum((estim-mean(moni) )^2)/
+  sum((moni-mean(moni))^2)
+
+png(paste0(output_folder,"seasonal_djf.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+    bg = "white", res = 150)
+par(mar=c(4,4.5,2,1), pty="s")
+print({
+  
+  plot(values(moni_djf), values(pre_djf), xlim=c(5,80), ylim=c(5,80), 
+       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "December - February")
+  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 1.2)))
+  abline(0,1,lwd=2, col="black")
+  
+})
+dev.off()
+
+
+######
+
+
+###### Seasonality maps ####
+
+library(viridis)
+library(lattice)
+
+cool = rainbow(100, start=rgb2hsv(col2rgb('green'))[1], end=rgb2hsv(col2rgb('blue'))[1])
+warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green'))[1])
+#middle = rainbow(215, start=rgb2hsv(col2rgb('#FF8600FF'))[1], end=rgb2hsv(col2rgb('green'))[1])
+cols = c(rev(cool),  rev(warm))
+
+dir <- "D:/Air Quality/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
+
+
+####### MARCH - MAY #####
+
+all_sea<- stack(pre_mam,pre_djf,pre_jja,pre_son)
+seq_lab<- seq(floor(min(minValue(all_sea))), ceiling(max(maxValue(all_sea))), length.out=7)
+scales_at<- unique(c(seq(floor(min(minValue(all_sea))), ceiling(max(maxValue(all_sea))), length.out=200)))
+
+h <- rasterVis::levelplot(pre_mam, 
+                          margin=FALSE, main= "March - May Predicted" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq_lab)),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("      ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=scales_at)+
+                          # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                          #names.attr=rep(names(AOD_plot))
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+png(paste0(output_folder,"Seasonal_map_mam.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+
+
+######
+
+
+####### June - AUGUST #####
+
+
+
+h <- rasterVis::levelplot(pre_jja, 
+                          margin=FALSE, main= "June - August Predicted" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq_lab)),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("      ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=scales_at)+
+  # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+  #names.attr=rep(names(AOD_plot))
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+png(paste0(output_folder,"Seasonal_map_jja.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+
+
+######
+
+
+####### September - November #####
+
+
+
+h <- rasterVis::levelplot(pre_son, 
+                          margin=FALSE, main= "September - November Predicted" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq_lab)),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("      ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=scales_at)+
+  # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+  #names.attr=rep(names(AOD_plot))
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+png(paste0(output_folder,"Seasonal_map_son.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+
+
+######
+
+
+####### December - February #####
+
+
+
+h <- rasterVis::levelplot(pre_djf, 
+                          margin=FALSE, main= "December - February Predicted" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq_lab)),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=0.75,
+                            title= expression(paste("      ", mu,"g ",m^-3) )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=scales_at)+
+  # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+  #names.attr=rep(names(AOD_plot))
+  latticeExtra::layer(sp.polygons(shp_UAE))
+
+png(paste0(output_folder,"Seasonal_map_djf.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+
+
+######
+
+
+
+
+###########################################################
+################                         ##################
+################ Validation (70% - 30%)  ##################
+################                         ##################
+###########################################################
+
+
+
+rm(list = ls(all = TRUE))
+
+#### LOADING THE RESULT WORKSPACE
+
+output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/"
+load_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+
+
+loadOneName <- function(objName, file, envir = parent.frame(),
+                        assign.on.exit = TRUE) {
+  tempEnv <- new.env()
+  load(file, envir = tempEnv)
+  stopifnot(objName %in% ls(tempEnv))
+  if(assign.on.exit) {
+    assign(objName, tempEnv[[objName]], envir = envir)
+    return(invisible(tempEnv[[objName]]))
+  }
+  tempEnv[[objName]]
+}
+
+
+data_frame_predict<- data.frame()
+pred_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "pred")])
+  r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("Predicted", "month_ind")
+  data_frame_predict<-rbind(data_frame_predict,month_ind)
+  pred_ras_stack<- stack(pred_ras_stack,ras_r2)
+}
+
+#### AOD Coefficient
+
+data_frame_AOD<- data.frame()
+AOD_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "AOD_mean")])
+  r2_data<- dawi[, c( "AOD_mean")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("AOD_mean", "month_ind")
+  data_frame_AOD<-rbind(data_frame_AOD,month_ind)
+  AOD_ras_stack<- stack(AOD_ras_stack,ras_r2)
+}
+
+##### Wind Speed coefficents ####
+
+data_frame_WS<- data.frame()
+WS_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "wind_speed")])
+  r2_data<- dawi[, c( "wind_speed")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("wind_speed", "month_ind")
+  data_frame_WS<-rbind(data_frame_WS,month_ind)
+  WS_ras_stack<- stack(WS_ras_stack,ras_r2)
+}
+
+##### RH coefficents ####
+
+data_frame_RH<- data.frame()
+RH_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "RH")])
+  r2_data<- dawi[, c( "RH")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("RH", "month_ind")
+  data_frame_RH<-rbind(data_frame_RH,month_ind)
+  RH_ras_stack<- stack(RH_ras_stack,ras_r2)
+}
+
+##### DEW coefficents ####
+
+data_frame_DEW<- data.frame()
+DEW_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "DEW")])
+  r2_data<- dawi[, c( "DEW")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("DEW", "month_ind")
+  data_frame_DEW<-rbind(data_frame_DEW,month_ind)
+  DEW_ras_stack<- stack(DEW_ras_stack,ras_r2)
+}
+
+##### Intercept coefficents ####
+
+data_frame_intercept<- data.frame()
+Intercept_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "X.Intercept.")])
+  r2_data<- dawi[, c( "X.Intercept.")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("Intercept", "month_ind")
+  data_frame_intercept<-rbind(data_frame_intercept,month_ind)
+  Intercept_ras_stack<- stack(Intercept_ras_stack,ras_r2)
+}
+
+
+
+
+
+
+#### monthly loop 
+
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
+All_extracted_data_tr<- NULL
+All_extracted_data_val<- NULL
+
+for (qq in 1:12){
+#qq=1
+
+load(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_validation.RData"))
+load(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_training.RData"))   
+load( file="D:/Air Quality/GWR_with_met/Stations_for_validation/All_stations.RData")
+
+### functions needed for the extraction 
+extra_dataframe <- function(x=x, y=y, mydata=mydata, lon_lat= c("x", "y")){
+  # x is the longitude of the point to be extracted
+  # y is the latitude of the point to be extracted
+  # mydata is the dataframe to be extracted from. mydata should contain the x y columns or lon and lat names provided
+  # as lon_lat i=2
+  
+  library(NISTunits)
+  all_point<- NULL
+  for (i in 1:length(x)){
+    a = (sin(NISTdegTOradian(mydata[[lon_lat[2]]]-y[i])/2))^2  + (cos(NISTdegTOradian(mydata[[lon_lat[2]]]))) * (cos (NISTdegTOradian(y[i]))) * (sin(NISTdegTOradian(mydata[[lon_lat[1]]]-x[i])/2))^2
+    c = 2*atan2( sqrt(a), sqrt((1-a)))
+    d = 6371*c # radius of the earth in km
+    min_y <- which(d == min(d))
+    close_point<- mydata[min_y,]
+    all_point<-rbind(all_point,close_point)
+  }
+  return(all_point)
+}
+
+source("D:/Air Quality/GWR/new_analysis_2013_2015/Validation_2016/extract_pnt_raster.r")
+
+# Latitude Longitude should be the lat and long of the files
+
+###### adding the all stations lat and long information to the training stations
+
+training_station<- left_join(training_station, pop_station, by="Site" )
+
+x= as.vector(training_station$Longitude)
+y= as.vector(training_station$Latitude)
+site<- as.data.frame(training_station$Site)
+names(site)<- "Site"
+
+### importing the raw input data
+
+
+nam <- paste("Input_data_", month.name[qq] , sep = "")
+mydata <- loadOneName( eval(nam), file=paste0(load_folder, "Input_mydata_file.RData"))
+
+data_extraced_raw <- cbind(site, extra_dataframe(x=x, y=y, mydata=mydata)) 
+
+Moni_estimated_tr <- extract_points(raster=pred_ras_stack[[month.name[qq]]], input_stations = training_station )
+
+moni_real_estimate_tr<-cbind(data_extraced_raw$Moni, Moni_estimated_tr, month.name[qq])
+names(moni_real_estimate_tr)<- c("Monitoring", "Estimate", "Month")
+
+
+
+##### validation
+
+
+
+###### adding the all stations lat and long information to the training stations
 
 {
-if (max_val <= max(xxx)){
-xxx<- unique(c( xxx))
-}else{
-xxx<- unique(c( xxx, max_val))
+  load("D:/Air Quality/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
+  
+  ## filtering the data for PM2.5 and 2015
+  AQ_data_2015 <- AQ_data_12 %>%
+    filter(years == 2015, Pollutant == "PM2.5" ) 
+  AQ_data_2015 <- na.omit(AQ_data_2015)
+  
+  ## filtering for specific month
+  AQ_data_PM25 <- AQ_data_2015 %>%
+    filter (months==qq)
+  
+  # removing stations with very low monthly observations
+  stations_remove <- AQ_data_PM25 %>%   # stations less than 5 day reading are removed to reduce the BIAS
+    group_by(Site) %>%
+    summarize(station_count= sum(Value == Value))%>%
+    filter(station_count <= 5)
+  
+  # filterig stations with enough observations monthly
+  if ( nrow(stations_remove) > 0 ){
+    AQ_data_PM25<- AQ_data_PM25%>%
+      filter( !(Site %in% c(stations_remove$Site )))
+  }
+  
+  
+  # monthly mean of the month
+  AQ_data_PM25 <- AQ_data_PM25 %>%
+    group_by(Site, years, months) %>%
+    summarize(mon_mean= mean(Value, na.rm = T))
+  
+  # # monthly mean of january
+  # AQ_data_PM25 <- AQ_data_PM25 %>%
+  #   group_by(Site) %>%
+  #   summarize(sea_mean=mean(mon_mean, na.rm = T))
+  
+  # goegraphical location of the stations
+  
+  coordin_site<-filter(AQ_data_2015,  Pollutant == "PM2.5" , months==qq)
+  coordin_site<-coordin_site %>%
+    dplyr::distinct(Site, .keep_all = T)%>%
+    dplyr::select(-years)
+  
+  AQ_data_PM25<- left_join(AQ_data_PM25, coordin_site, by= c("Site"= "Site" ))
+  
+  AQ_data_PM25<- as.data.frame(AQ_data_PM25)     # to ungroup the variables
+  
+  AQ_data_PM25 <- AQ_data_PM25 %>%
+    dplyr::select(Site,
+           Longitude,
+           Latitude,
+           mon_mean)
+  
+  # remove all lines with NA
+  AQ_data_PM25 <- na.omit(AQ_data_PM25)
+  AQ_data_PM25<- AQ_data_PM25%>%
+    filter(Site %in% c(validation_station$Site))
 }
 
-if (min_val >= min(xxx)){
-  xxx<- unique(c( xxx))
-}else{
-  xxx<- unique(c(min_val, xxx))
+
+validation_station <- left_join(validation_station, pop_station, by="Site" )
+
+x= as.vector(validation_station$Longitude)
+y= as.vector(validation_station$Latitude)
+site<- as.data.frame(validation_station$Site)
+names(site)<- "Site"
+
+### extracting validation data from raw data
+
+data_extraced_raw_val <- cbind(site, extra_dataframe(x=x, y=y, mydata=mydata)) 
+
+
+AOD_coeffi_val <- extract_points(raster=AOD_ras_stack[[qq]], input_stations = validation_station )
+wind_speed_coeffi_val <- extract_points(raster=WS_ras_stack[[qq]], input_stations = validation_station )
+DEW_coeffi_val <- extract_points(raster=DEW_ras_stack[[qq]], input_stations = validation_station )
+#temp_coeffi_val <- extract_points(raster=Temp_coeffi[[qq]], input_stations = validation_station )
+RH_coeffi_val <- extract_points(raster=RH_ras_stack[[qq]], input_stations = validation_station )
+Cons_coeffi_val <- extract_points(raster=Intercept_ras_stack[[qq]], input_stations = validation_station )
+
+
+# "Moni ~  AOD_mean + wind_speed  + DEW+ temp+ RH + constant"
+
+Moni_estimated_val <- data_extraced_raw_val$AOD_mean*AOD_coeffi_val + data_extraced_raw_val$wind_speed*wind_speed_coeffi_val+
+  data_extraced_raw_val$RH*RH_coeffi_val+ data_extraced_raw_val$DEW*DEW_coeffi_val+
+  Cons_coeffi_val# +data_extraced_raw_val$temp*temp_coeffi_val 
+
+moni_real_estimate_val<-cbind(AQ_data_PM25$mon_mean, Moni_estimated_val, month.name[qq])
+names(moni_real_estimate_val)<- c("Monitoring", "Estimate", "Month")
+
+All_extracted_data_tr<- rbind(All_extracted_data_tr,moni_real_estimate_tr)
+All_extracted_data_val<- rbind( All_extracted_data_val,moni_real_estimate_val)
+
+rm(list = ls()[!ls() %in% c( "All_extracted_data_tr","All_extracted_data_val", "pred_ras_stack",
+                             "AOD_ras_stack","WS_ras_stack","RH_ras_stack","DEW_ras_stack","Intercept_ras_stack", "qq",
+                             "loadOneName", "output_folder", "load_folder")])
 }
+
+
+
+
+# wind_speed_coeffi_training <- extract_points(raster=WS_coeffi[[qq]], input_stations = training_station )
+# DEW_coeffi_training <- extract_points(raster=DEW_coeffi[[qq]], input_stations = training_station )
+# temp_coeffi_training <- extract_points(raster=Temp_coeffi[[qq]], input_stations = training_station )
+# #RH_coeffi_training <- extract_points(raster=RH_coeffi[[qq]], input_stations = training_station )
+# Cons_coeffi_training <- extract_points(raster=Cons_coeffi[[qq]], input_stations = training_station )
+# 
+# 
+# # "Moni ~  AOD_mean + wind_speed  + DEW+ temp+ RH "
+# 
+# Moni_estimated <- data_extraced_raw$AOD_mean*AOD_coeffi_training + data_extraced_raw$wind_speed*wind_speed_coeffi_training+
+#   data_extraced_raw$temp*temp_coeffi_training + data_extraced_raw$DEW*DEW_coeffi_training+
+#   Cons_coeffi_training #+data_extraced_raw$RH*RH_coeffi_training 
+# 
+# moni_real_estimate_tr<-cbind(data_extraced_raw$Moni, Moni_estimated, month.name[qq])
+# names(moni_real_estimate_tr)<- c("Monitoring", "Estimate", "Month")
+# 
+
+###########################################################
+###########################################################
+###########################################################
+
+# rsq <- function(x, y) {
+#   summary(lm(y~x))$r.squared
+# }
+# rsq(dawit$Monitoring, dawit$Estimate)
+# 
+# 
+# r_2_tr<-  rsq(All_extracted_data_tr$Monitoring, All_extracted_data_tr$Estimate)
+
+r_2_tr<-   sum((All_extracted_data_tr$Estimate-mean(All_extracted_data_tr$Monitoring) )^2)/
+   sum((All_extracted_data_tr$Monitoring-mean(All_extracted_data_tr$Monitoring))^2)
+
+#### r 2 for the validation
+dawit<- All_extracted_data_val%>%
+  filter( Monitoring <= 70)
+
+r_2_val<- (sum((All_extracted_data_val$Estimate-mean(All_extracted_data_val$Monitoring))^2))/(
+  sum((All_extracted_data_val$Monitoring-mean(All_extracted_data_val$Monitoring))^2))
+
+
+
+# r_2_val<- sum((All_extracted_data_val$Estimate-mean(All_extracted_data_val$Monitoring ))^2)/
+#    sum((All_extracted_data_val$Monitoring-mean(All_extracted_data_val$Monitoring))^2))
+
+
+#### Scatter plot of the training 
+png(paste0(output_folder,"R2_training.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+    bg = "white", res = 150)
+par(mar=c(4,4.5,2,1))
+print({
+  
+  plot(All_extracted_data_tr$Monitoring,All_extracted_data_tr$Estimate, xlim=c(0,150), ylim=c(0,150), 
+       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Training")
+  text(10,100, substitute(R^2==a, list(a = round(r_2_tr, digits=2), cex = 1.2)))
+  abline(0,1,lwd=2, col="black")
+})
+dev.off()
+
+
+#### Scatter plot of the validation 
+
+png(paste0(output_folder,"R2_validation.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+    bg = "white", res = 150)
+par(mar=c(4,4.5,2,1))
+print({
+  plot(All_extracted_data_val$Monitoring, All_extracted_data_val$Estimate, xlim=c(0,150), ylim=c(0,150), 
+       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Validation")
+  text(10,100, substitute(R^2==a, list(a = round(r_2_val, digits=2), cex = 1.2)))
+  abline(0,1,lwd=2, col="black")
+})
+dev.off()
+
+
+
+###########################################################
+###########################################################
+###########################################################
+
+#### RMSE for the training 
+
+dawit<-function(xx){
+  zz<- sqrt(sum(xx)/(length(xx)))
 }
 
+RMSE_tr<- All_extracted_data_tr%>%
+  mutate(diff=(Monitoring-Estimate)^2)%>%
+  group_by(Month)%>%
+  summarise(RMSE= dawit(diff))
 
 
-cool = rainbow(50, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('blue'))[1])
-warm = rainbow(50, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
-cols = c(rev(cool), rev(warm))
-mypalette <- colorRampPalette(cols)(255)
+#### RMSE for the validation
 
-pal = colorBin(mypalette, bin = xxx, domain = min_val:max_val, na.color = "transparent")
+RMSE_val<- All_extracted_data_val%>%
+  mutate(diff=(Monitoring-Estimate)^2)%>%
+  group_by(Month)%>%
+  summarise(RMSE= dawit(diff))
+mean(RMSE_val$RMSE)
+mean(RMSE_tr$RMSE)
+
+# x <- sort(runif(10, min=0, max=10))
+# y <- runif(10, min=2, max=5)
+# 
+# #Polygon-Plot
+# plot(x,y, type="n", ylim=c(0,5))
+# polygon(c(x[1], x, x[length(x)]), c(0, y, 0), col="green")
 
 
 
-for (i in 1:length(filenames_hourly_NCMS)) {
-  # load the stacked raster with all the images
-  # NCMS_STACK_image <- raster("D:/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data/rasters/Dry_Temperature_NCMS_1km.tif", band = i)
-  # NCMS_STACK_image <- raster("D:/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data/rasters/Irradiation_W_m2_NCMS_1km.tif", band = i)/3.6
-    NCMS_STACK_image <-  NCMS_DRY_TEMP_STACK_image[[i]]
-    plot(NCMS_STACK_image)
-  
+library(ggplot2)
 
-  name_time <- str_sub(filenames_hourly_NCMS[i], start = 1, end = -5)
+
+png(paste0(output_folder,"R2_train_month.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+    bg = "white", res = 150)
+par(mar=c(4,4.5,2,1))
+print({
+  sp <- ggplot(All_extracted_data_tr, aes(x=Monitoring, y=Estimate )) + geom_point(shape=3, col="blue")+
+    xlim(0,100)+ ylim(0,100)+
+    geom_abline(mapping = NULL, data = NULL,  slope=1, intercept=0,
+                na.rm = FALSE, show.legend = NA,size = 1)+
+    facet_wrap(~ Month, ncol=3, labeller = )
+  sp
   
-  tag_time <- paste0(str_sub(name_time, start = 1, end = -7), " ",
-              str_sub(name_time, start = 12, end = -4), ":",
-               str_sub(name_time, start = 15, end = -1))
+  
+})
+dev.off()
+
+
+png(paste0(output_folder,"R2_val_month.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+    bg = "white", res = 150)
+par(mar=c(4,4.5,2,1))
+print({
+  sp <- ggplot(All_extracted_data_val, aes(x=Monitoring, y=Estimate )) + geom_point(shape=3, col="blue")+
+    xlim(0,100)+ ylim(0,100)+
+    geom_abline(mapping = NULL, data = NULL,  slope=1, intercept=0,
+                na.rm = FALSE, show.legend = NA,size = 1)+
+    facet_wrap(~ Month, ncol=3, labeller = )
+  sp
   
   
- 
-  
-  # define popup for time scene
-  "h1 { font-size: 3px;}"
-  content <- paste('<h1><strong>', tag_time,'', sep = "")
-  
-  map <- leaflet() %>% 
-    addTiles() %>% 
-    addTiles(group = "OSM (default)") %>%
-    addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
-    addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
-    addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
-    
-    addPopups(54, 25, content,
-              options = popupOptions(closeButton = FALSE)) %>%
-    
-    addRasterImage(NCMS_STACK_image, 
-                   colors = pal, 
-                   opacity = 0.5, group = "Dry_Temp_NCMS") %>%
-    addLayersControl(
-      baseGroups = c("Toner Lite" ,"Road map" ,"Satellite"),
-      overlayGroups = "Dry_Temp_NCMS",
-      options = layersControlOptions(collapsed = TRUE)) %>%
-    addLegend("bottomright", pal = pal, values = c(min_val, max_val),
-            #  title = "<br><strong>Dry Temp.(<sup>°</sup>C): </strong>",
-              title = "<br><strong>W/m<sup>2</sup> : </strong>",
-              labFormat = labelFormat(prefix = ""),
-              opacity = 0.5)
-  map
-  
-  ## This is the png creation part
-  saveWidget(map, 'temp.html', selfcontained = FALSE)
-  webshot('temp.html', file = paste0(name_time,".png"), vwidth = 1100, vheight = 900,
-          cliprect = 'viewport')
-  
-  } 
+})
+dev.off()
+
+
+
 
 # to make a movie.......
 # to use with ImageMagik using the commnad line cmd in windows
@@ -1780,7 +3249,284 @@ for (i in 1:length(filenames_hourly_NCMS)) {
 # magick -delay 50 -loop 0 *.png Dry_Temperatue_NCMS_1km_DUST_event_02_April_2015.gif
 # magick -delay 50 -loop 0 *.png Irradiance_NCMS_1km_DUST_event_02_April_2015.gif
 # magick -delay 50 -loop 0 *.png Wind_Speed_NCMS_1km_DUST_event_02_April_2015.gif
+
+
+
+
+
+###########################################################
+############   END of Validation    #######################
+###########################################################
+
+
+
+###########################################################
+#######   Start of the Regression using LU    #############
+###########################################################
+
+# Sys.setenv(TZ="Asia/Dubai")
+# Sys.time()
+# help(Startup)
+
+# #########   Land Use layer to be used for the Regression    #######
+
+
+# load raster land use UAE
+##### Lancover == 16  ---> desert area #########
+
+LU <- raster("D:/Air Quality/GWR/AD_DUBAI_Modis.tif")
+plot(LU)
+
+LU[LU < 16] <- 0
+LU[LU > 16] <- 0
+LU <- LU/16
+plot(LU)
+resampled_LU<-aggregate(LU, fact=10, fun= sum ) # changing fact number to change the aggregation of the pixels
+LU_fract_desert <- resampled_LU/100
+
+str(LU_fract_desert)
+res(LU_fract_desert)
+plot(LU_fract_desert)
+
+##### Lancover == 13  ---> urban area #########
+
+LU <- raster("D:/Air Quality/GWR/AD_DUBAI_Modis.tif")
+
+plot(LU)
+
+LU[LU < 13] <- 0
+LU[LU > 13] <- 0
+LU <- LU/13
+plot(LU)
+resampled_LU<-aggregate(LU,fact=10, fun= sum ) # changing fact number 
+LU_fract_urban <- resampled_LU/100
+
+plot(LU_fract_urban)
+
+res(LU_fract_urban)
+
+
+####### exporting the landuse layers ##### 
+
+ writeRaster(LU_fract_urban, "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/GWR_LU_variables/urban_fraction.tif",overwrite=TRUE)
+ writeRaster(LU_fract_desert, "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/GWR_LU_variables/desert_fraction.tif",overwrite=TRUE)
+
+rm(list = ls(all = TRUE))
+
+
+#### END OF LANDUSE MAPS ####
+
+
+###########################################################
+#######   Start of the GWR Regression using LU  ###########
+###########################################################
+
+#### LOADING THE RESULT WORKSPACE
+
+output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/GWR_LU_variables/"
+load_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+
+
+loadOneName <- function(objName, file, envir = parent.frame(),
+                        assign.on.exit = TRUE) {
+  tempEnv <- new.env()
+  load(file, envir = tempEnv)
+  stopifnot(objName %in% ls(tempEnv))
+  if(assign.on.exit) {
+    assign(objName, tempEnv[[objName]], envir = envir)
+    return(invisible(tempEnv[[objName]]))
+  }
+  tempEnv[[objName]]
+}
+
+LU_fract_urban<- raster( "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/GWR_LU_variables/urban_fraction.tif")
+LU_fract_desert<- raster( "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/GWR_LU_variables/desert_fraction.tif")
+
+
+
+data_frame_predict<- data.frame()
+pred_ras_stack<- stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
+  model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+  dawi<- data.frame(model_value$SDF)
+  ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "pred")])
+  r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  colnames(month_ind)<-c("Predicted", "month_ind")
+  data_frame_predict<-rbind(data_frame_predict,month_ind)
+  pred_ras_stack<- stack(pred_ras_stack,ras_r2)
+}
+
+# output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
+
+
+data_frame_predict<- cbind(data_frame_predict, month.name[data_frame_predict$month_ind])
+colnames(data_frame_predict)[3]<- "Month"
+
+### building a raster from the monitoring
+
+load(paste(load_folder,"Input_mydata_file.RData", sep=""))
+
+Moni_ras_stack<-stack()
+for (kk in 1:12){
+  #kk=1
+  nam <- paste("Input_data_", month.name[kk] , sep = "")
+  # model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
   
+  assign("dawi", eval(parse(text = paste("Input_data_", month.name[kk] , sep = ""))) )
+  
+  ras_r2<- rasterFromXYZ( dawi[, c("x","y", "Moni")])
+  #r2_data<- dawi[, c( "pred")]
+  names(ras_r2)<- month.name[kk]
+  # month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  # colnames(month_ind)<-c("Predicted", "month_ind")
+  # data_frame_predict<-rbind(data_frame_predict,month_ind)
+  Moni_ras_stack<- stack(Moni_ras_stack,ras_r2)
+}
+
+
+
+#### CHNAGING THE RESOLUTION OF THE RASTERS TO 1KM
+
+moni_1km<- disaggregate(Moni_ras_stack, fact=10)
+
+pred_1km<- disaggregate(pred_ras_stack, fact=10)
+
+
+
+
+
+setwd("D:/Air Quality/GWR_with_met/")
+
+#output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+
+result_monthly<- list()
+
+# OD_mean_jan<-raster("MODIS/AOD_mean_01.tif")
+# plot(OD_mean_jan)
+
+old<- Sys.time()
+
+for (qq in 1:12){
+  #qq=10
+  
+  # layers for the GWR
+  moni_1km_mon<- moni_1km[[qq]]
+  pred_1km_mon<- pred_1km[[qq]]
+  
+  LU_fract_urban_arra <- resample(LU_fract_urban,moni_1km_mon,"bilinear")
+  LU_fract_desert_arra <- resample(LU_fract_desert,moni_1km_mon,"bilinear")
+  
+
+  
+  #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  ####  as SpatialPointsDataFrame layers Method IIII  ####
+  #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ 
+  
+  moni_1km_mon_pts <- as.data.frame(moni_1km_mon, xy=T)
+  colnames(moni_1km_mon_pts)<- c("x", "y", "Moni")
+  
+  pred_1km_mon_pts <- as.data.frame(pred_1km_mon, xy=T)
+  colnames(pred_1km_mon_pts)<- c("x", "y", "Pred")
+  
+  UR_fraction_pts <- as.data.frame(LU_fract_urban_arra, xy=T)
+  colnames(UR_fraction_pts)<- c("x", "y", "Urban")
+  
+  DE_fraction_pts <- as.data.frame(LU_fract_desert_arra, xy=T)
+  colnames(DE_fraction_pts)<- c("x", "y", "Desert")
+  
+  mydata<- left_join(moni_1km_mon_pts, pred_1km_mon_pts,  by = c("x", "y") )
+  mydata<- left_join(mydata, UR_fraction_pts,  by = c("x", "y") )
+  mydata<- left_join(mydata, DE_fraction_pts,  by = c("x", "y") )
+  # mydata<- left_join(mydata, DEW_pts,  by = c("x", "y") )
+  # mydata<- left_join(mydata, RH_pts,  by = c("x", "y") )
+  # mydata<- left_join(mydata, Radiation_pts,  by = c("x", "y") )
+  # 
+  mydata<- na.omit(mydata)
+  
+
+ # save( mydata ,file= paste0(output_folder, "/GWR_LU_variables/",month.name[[qq]],"_mydata.RData"))
+  
+  rm(list = ls()[!ls() %in% c( "LU_fract_desert","LU_fract_urban","moni_1km","pred_1km", "mydata","qq",
+                               "loadOneName", "output_folder", "load_folder")])
+  
+  
+  library(spgwr)
+  library(parallel)
+  # for parallel processing 
+  
+  bwG_pnt <- gwr.sel(Moni ~  Pred + Urban  , #+   Desert ,#+ RH ,#+ temp
+                     data= mydata,  coords=cbind( mydata$x , mydata$y),
+                     gweight = gwr.Gauss, #RMSE=T,
+                     method="cv", verbose = F, show.error.messages = T)
+
+  
+ 
+  
+  #save( bwG_pnt ,file= paste0(output_folder, "GWR_LU_variables/",month.name[[qq]],"_bwG_pnt.RData"))
+  
+  
+  #load(file= paste0(output_folder, "GWR_LU_variables/",month.name[[qq]],"_bwG_pnt.RData"))
+  #load(file= paste0(output_folder, "/GWR_LU_variables/",month.name[[qq]],"_mydata.RData"))
+  # Sys.sleep(1800)
+
+  
+  gwrG_pnt <- gwr(Moni ~  Pred +   Desert + Urban, #   ,#+RH , #+ temp
+                  data= mydata,  bandwidth = bwG_pnt*1.1,  coords=cbind( mydata$x , mydata$y),
+                  gweight = gwr.Gauss, hatmatrix = F ,predictions = T , cl=NULL )#,
+                  #cl=NULL)
+
+  
+  resave <- function(..., list = character(), file) {
+    previous  <- load(file)
+    var.names <- c(list, as.character(substitute(list(...)))[-1L])
+    for (var in var.names) assign(var, get(var, envir = parent.frame()))
+    save(list = unique(c(previous, var.names)), file = file)
+  }
+  
+  
+
+  nam <- paste("gwrG_pnt_", month.name[qq], sep = "")
+  nam_mydata<- paste("Input_data_", month.name[qq], sep = "")
+  assign(nam, gwrG_pnt)
+  assign(nam_mydata, mydata )
+  if (qq==1){
+    save(list= eval(nam), file= paste0(output_folder, "GWR_file.RData"))
+    save(list= eval(nam_mydata), file= paste0(output_folder, "Input_mydata_file.RData"))
+  }else{
+    resave(list = eval(nam), file= paste0(output_folder, "GWR_file.RData"))
+    resave(list= eval(nam_mydata), file= paste0(output_folder, "Input_mydata_file.RData"))
+  }
+  
+  #dawit<-load(file)
+  #dadada<- as.data.frame(gwrG_pnt$SDF)
+  # hist(gwrG_pnt$SDF$Urban, breaks=1000)
+  
+  
+  
+  #plot(mydata$Moni)
+  # print(mean(gwrG_pnt$SDF$localR2))
+  
+  #result_monthly<-c(result_monthly, gwrG_pnt)
+  
+  print(qq)
+  print(plot(gwrG_pnt$SDF$localR2, main=qq))
+  
+  rm(list = ls()[!ls() %in% c( "moni_1km","pred_1km", "result_monthly", "mydata","qq",
+                                "loadOneName", "output_folder", "load_folder")])
+  
+}
+
+
+# save(result_monthly, file="D:/Air Quality/GWR_with_met/Result/data/result_regression_cv_70_30_rm_RH.RData")
+
+new <- Sys.time() - old # calculate difference
+print(new)
+
+
 
 
 
