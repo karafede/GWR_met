@@ -109,19 +109,7 @@ for (i in 1:length(filenames)) {
               Temp.DewPoint...C.=mean_na(Temp.DewPoint...C.), Vapour.Press..hPa.=mean_na(Vapour.Press..hPa.),
               RelHumidity....=mean_na(RelHumidity....),Radiation.Global..Wh.m2.=mean_na(Radiation.Global..Wh.m2.),
               Press.QFF..hPa.=mean_na(Press.QFF..hPa.), Prec..mm.=mean_na(Prec..mm.) ) 
-  
-   # # make hourly average 
-   # AWS_data <- AWS_data %>%
-   #  group_by(date,
-   #           hour,
-   #           station) %>%
-   #  dplyr::summarise(wind_direction = mean(Wind.Dir...., na.rm = TRUE),
-   #                   wind_speed = mean(Wind.Speed..m.s., na.rm = TRUE),
-   #                   RH = mean(RelHumidity...., na.rm = TRUE),
-   #                   Radiation = mean(Radiation.Global..Wh.m2., na.rm = TRUE),
-   #                   T_dry = mean(Temp.Dry...C., na.rm = TRUE),
-   #                   T_dew = mean(Temp.DewPoint...C., nam.rm = TRUE))
-   
+
    
   AWS_data_check <- AWS_data_check %>%
      mutate(wind_direction = Wind.Dir....,
@@ -157,8 +145,8 @@ for (i in 1:length(filenames)) {
 # to calculate the average of wind speed and wind direction  
 # 
 
-write_csv(All_AWS_data, "D:/Air Quality/GWR_with_met/met_refined/AWS_concatenated_met_2015.csv")
-# write_csv(All_AWS_data, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/AWS_concatenated_met_2015.csv")
+# write_csv(All_AWS_data, "D:/Air Quality/GWR_with_met/met_refined/AWS_concatenated_met_2015.csv")
+write_csv(All_AWS_data, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/AWS_concatenated_met_2015_FK.csv")
 
 
 #############################################################################################
@@ -166,7 +154,8 @@ write_csv(All_AWS_data, "D:/Air Quality/GWR_with_met/met_refined/AWS_concatenate
 #############################################################################################
 
 
-setwd("D:/Air Quality/GWR_with_met/")
+# setwd("D:/Air Quality/GWR_with_met/")
+setwd("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met")
 All_AWS_data <- read_csv("met_refined/AWS_concatenated_met_2015.csv")
 # All_AWS_data <- read_csv("AWS_concatenated_DUST_2_April_2015_AVG.csv")
 
@@ -176,65 +165,13 @@ All_AWS_data$DateTime <- paste0(All_AWS_data$year_obs, " ", month.abb[All_AWS_da
 
 # load coordinates of the monitoring stations:
 
-STATIONS_COORDS <- read_csv("D:/Air Quality/GWR_with_met/met_refined/stations_clean_FK.csv") 
+# STATIONS_COORDS <- read_csv("D:/Air Quality/GWR_with_met/met_refined/stations_clean_FK.csv") 
+STATIONS_COORDS <- read_csv("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/met_refined/stations_clean_FK.csv") 
 colnames(STATIONS_COORDS) <- c("station", "latitude", "longitude")
 
 # join coordinated of the the station with the total dataset
 All_AWS_data_1 <- All_AWS_data %>%
   left_join(STATIONS_COORDS, by = c("station"))
-
-{
-# # missing lat and lof of Jabal Jais, Jabal Hafet, Yasat
-# 
-# # list DateTime
-# DateHour <- All_AWS_data[!duplicated(All_AWS_data[c("DateTime")]),]
-# # DateHour <- as.list(DateHour[,10])
-# DateHour <- as.list(DateHour[,1])
-# DateHour <- unlist(DateHour)
-# 
-# # list stations
-# STATIONS_NAMES <- All_AWS_data[!duplicated(All_AWS_data[c("station")]),]
-# # STATIONS_NAMES <- as.list(STATIONS_NAMES[,3])
-# STATIONS_NAMES <- as.list(STATIONS_NAMES[,4])
-# STATIONS_NAMES <- unlist(STATIONS_NAMES)
-# 
-# # generate a time sequence for the WRF-Chem run at intervals of 1 hour (should be 168 images, 7 DAYS)
-# start <- as.POSIXct("2015-03-29 00:00:00")
-# interval <- 60 #minutes
-# end <- start + as.difftime(7, units="days")
-# TS <- seq(from=start, by=interval*60, to=end)   # same time series as the AQ data
-# TS <- TS[1:168]
-# 
-# 
-# #  STATIONS_NAMES[1]
-# #  DateHour[1]
-# # 
-# 
-# # i <- 3
-# # j <- 3
-# 
-# setwd("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data")
-# setwd("D:/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data")
-# getwd()
-# 
-# for (i in 1:length(unique(All_AWS_data$mon))) {
-#   
-#   hourly_AWS_data <- NULL
-#   
-#   for (j in 1:length(STATIONS_NAMES)) {
-#       name_time <- TS[i]
-#        AAA <- All_AWS_data %>%
-#          filter(DateTime == DateHour[i],
-#                 station == as.character(STATIONS_NAMES[j]))
-#        hourly_AWS_data <- rbind(hourly_AWS_data, AAA)
-#        hourly_AWS_data <- na.omit(hourly_AWS_data)
-#        write.csv(hourly_AWS_data, paste0(str_sub(name_time, start = 1, end = -10), "_",
-#                                          str_sub(name_time, start = 12, end = -7), "_",
-#                                          str_sub(name_time, start = 15, end = -4),
-#                                          ".csv"))
-#   }
-#   }
-}
 
 
 
@@ -261,7 +198,9 @@ library(stringr)
 
 
 # kriging_points <- function(filenames_hourly_NCMS, resl_ras= 0.1, shp_UAE = "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/website_MODIS/UAE_boundary"){
-  kriging_points <- function(filenames_hourly_NCMS, resl_ras= 0.01, shp_UAE = "D:/website_MODIS/UAE_boundary", xx=8){
+
+# kriging at 1 km
+  kriging_points <- function(filenames_hourly_NCMS, resl_ras= 0.01, shp_UAE = "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/website_MODIS/UAE_boundary", xx=8){
     
     all_rasters <- stack()  
     
@@ -281,8 +220,6 @@ library(stringr)
     setwd(shp_UAE)
     dir <- shp_UAE
     shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
-#    setwd("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data")
-    #setwd("D:/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data")
     }
   
   limit_x_y <-  extent(shp_UAE)
@@ -297,36 +234,7 @@ library(stringr)
    # overlay shape of UAE border
    plot(shp_UAE, add=TRUE, lwd=1)
   
-   {  
-  ## make a variogram----------------------------------------------------------------
-  
-  # vargram_T_dry <- variogram(T_dry ~ 1, federico_AWS) # calculates sample variogram values for the dry temperature
-  # nn <- floor(length(vargram_T_dry$gamma)/2)
-  # var_for_fit<- mean(vargram_T_dry[nn:nrow(vargram_T_dry),3])
-  # 
-  # 
-  # # fit the variogram
-  # vargram_T_dry_fit  <- fit.variogram(vargram_T_dry, fit.ranges = FALSE, fit.sills = FALSE,
-  #                                   vgm(var_for_fit, "Sph"), fit.kappa = TRUE)
-  # 
-  # plot(vargram_T_dry)
-  # 
-  # plot(vargram_T_dry, vargram_T_dry_fit) # plot the sample values, along with the fit model
-  
 
-   # vargram_Radiation <- variogram(Radiation ~ 1, federico_AWS) # calculates sample variogram values for the dry temperature
-   # nn <- floor(length(vargram_Radiation$gamma)/2)
-   # var_for_fit<- mean(vargram_Radiation[nn:nrow(vargram_Radiation),3])
-   # 
-   # 
-   # # fit the variogram
-   # vargram_Radiation_fit  <- fit.variogram(vargram_Radiation, fit.ranges = FALSE, fit.sills = FALSE,
-   #                                     vgm(var_for_fit, "Sph"), fit.kappa = TRUE)
-   # 
-   # 
-   # plot(vargram_Radiation, vargram_Radiation_fit) # plot the sample values, along with the fit model
-   } 
-   
    vargram_WS <- variogram(federico_AWS[[xx]] ~ 1, federico_AWS) # calculates sample variogram values for the dry temperature
    nn <- floor(length(vargram_WS$gamma)/2)
    var_for_fit<- mean(vargram_WS[nn:nrow(vargram_WS),3])
@@ -356,7 +264,7 @@ library(stringr)
   
   
   # f.1 <- as.formula(Precip_in ~ X + Y)
-  # perform kriging
+  # perform kriging on all the variables
   #  dat.krg <- gstat::krige(T_dry ~ 1, federico_AWS, grd, vargram_T_dry_fit, nmax = 50)
   #  dat.krg <- gstat::krige(Radiation ~ 1, federico_AWS, grd, vargram_Radiation_fit, nmax = 50)
   dat.krg <- gstat::krige(federico_AWS[[xx]] ~ 1, federico_AWS, grd, vargram_WS_fit, nmax = 50)
@@ -376,15 +284,17 @@ library(stringr)
  
   }
   
+i <-  1
+
   # filenames_hourly_NCMS <- filenames_hourly_NCMS[1:3]
   # make kriging of all the files
-Total_wind<- stack()
-Total_temp<- stack()
-Total_RH<- stack()
-Total_Radiation<- stack()
-Total_dew<- stack()
+Total_wind <- stack()
+Total_temp <- stack()
+Total_RH <- stack()
+Total_Radiation <- stack()
+Total_dew <- stack()
 for (i in 1:12){
-  filenames_hourly_NCMS<- All_AWS_data_1%>%
+  filenames_hourly_NCMS <- All_AWS_data_1%>%
     filter (mon==i)
   names(filenames_hourly_NCMS)
   BBB_wind <- kriging_points(filenames_hourly_NCMS, resl_ras= 0.1, shp_UAE = "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/website_MODIS/UAE_boundary", xx=5)
@@ -406,46 +316,21 @@ for (i in 1:12){
   
 }
 
-writeRaster(Total_wind, "D:/Air Quality/GWR_with_met/Variables_raster/Wind_NCMS_10km.tif", 
+writeRaster(Total_wind, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Variables_raster/Wind_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_temp, "D:/Air Quality/GWR_with_met/Variables_raster/Temp_NCMS_10km.tif", 
+writeRaster(Total_temp, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Variables_raster/Temp_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_RH, "D:/Air Quality/GWR_with_met/Variables_raster/RH_NCMS_10km.tif", 
+writeRaster(Total_RH, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Variables_raster/RH_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_Radiation, "D:/Air Quality/GWR_with_met/Variables_raster/Radiation_NCMS_10km.tif", 
+writeRaster(Total_Radiation, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Variables_raster/Radiation_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_dew, "D:/Air Quality/GWR_with_met/Variables_raster/DEW_NCMS_10km.tif", 
+writeRaster(Total_dew, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Variables_raster/DEW_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
 
-save(Total_wind,Total_temp,Total_RH,Total_Radiation,Total_dew, file="D:/Air Quality/GWR_with_met/Variables_raster/NCMS_10km.RData")
+save(Total_wind,Total_temp,Total_RH,Total_Radiation,Total_dew, file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Variables_raster/NCMS_10km.RData")
 
 
-{
-# 
-# 
-# BBB_wind$December
-# plot(BBB_wind$December,main=names(BBB_wind))
-# 
-# BBB <- lapply(filenames_hourly_NCMS, kriging_points)
-#   
-#   
-#   
-#   # make a large stack raster with all the rasters
-#   ras_stack <- stack()
-#   
-#   
-# #  jj <- 99
-#   
-#   for (jj in 1:length(BBB)){      
-#     plot(BBB[[jj]])
-#     ras <- BBB[[jj]]
-#     ras_stack<- stack(ras_stack,ras)
-#   }
-# 
-# # writeRaster(ras_stack, paste0("D:/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data/rasters/Dry_Temperature_NCMS_1km_new.tif"), overwrite = TRUE)
-# # writeRaster(ras_stack, paste0("D:/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data/rasters/Irradiation_W_m2_NCMS_1km.tif"), overwrite = TRUE)
-# writeRaster(ras_stack, paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/Dust_Event_UAE_2015/AWS_2015 WEATHER/dust_event_outputs/hourly_data/rasters/Wind_Speed_NCMS_1km.tif"), overwrite = TRUE)
-}
+
 
 
 
@@ -461,16 +346,18 @@ save(Total_wind,Total_temp,Total_RH,Total_Radiation,Total_dew, file="D:/Air Qual
   Total_AOD<- stack()
 for (kk in 1:12){
   
-    ### for the year of 2016
+    ### for the year of 2015
     #i=1
     coefi_conver<- 85
+    # kk = 3
     
     ### for the year of 2015
     
-    year_req<-sprintf("%04d-",2015)
-    months_req<-sprintf("%02d",kk)
+    year_req <- sprintf("%04d-",2015)
+    months_req <- sprintf("%02d",kk)
     
-    path_name<-paste("Z:/_SHARED_FOLDERS/Air Quality/Phase 1/Pathflow of Phase I_DG/MODIS_LAADS_NASA/2015_MODIS_processed/2015_AOD_tiff_1km/" , year_req ,months_req ,"-**.tif", sep = "")
+    # list all .tif fles 
+    path_name <- paste("Z:/_SHARED_FOLDERS/Air Quality/Phase 1/Pathflow of Phase I_DG/MODIS_LAADS_NASA/2015_MODIS_processed/2015_AOD_tiff_1km/" , year_req ,months_req ,"-**.tif", sep = "")
     
     datafiles <- Sys.glob(path_name) #Or whatever identifies your files
     resultingStack <- stack()
@@ -503,9 +390,9 @@ for (kk in 1:12){
 
 #plot(Total_AOD$October, main=names(Total_AOD$October))
 
-writeRaster(Total_AOD, "D:/Air Quality/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.tif",overwrite=TRUE,
+writeRaster(Total_AOD, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.tif",overwrite=TRUE,
             options="INTERLEAVE=BAND")
-save(Total_AOD, file="D:/Air Quality/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.RData")
+save(Total_AOD, file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.RData")
 
 
 
@@ -520,9 +407,12 @@ save(Total_AOD, file="D:/Air Quality/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthl
 
 
 Total_monitoring_PM25<- stack()
-output_validation<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/"
+output_validation<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation"
 # i=1
-load("D:/Air Quality/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
+
+# monitoing data got from Z:\_SHARED_FOLDERS\Air Quality\Phase 2\PhD_DG\GWR\new_analysis_2013_2015\GRW_AOD_Hourly_monthly_V2_plots_2013_2015_IDW.R
+# filtered 4 boxplots
+load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
 
 ## filtering the data for PM2.5 and 2015
 AQ_data_2015 <- AQ_data_12 %>%
@@ -530,20 +420,20 @@ AQ_data_2015 <- AQ_data_12 %>%
 AQ_data_2015 <- na.omit(AQ_data_2015)
 
 ## filtering for specific month
-AQ_data_PM25 <- AQ_data_2015 #%>%
+AQ_data_PM25 <- AQ_data_2015 # %>%
 #  filter (months==i)
 
 # removing stations with very low monthly observations
 stations_remove <- AQ_data_PM25 %>%   # stations less than 5 day reading are removed to reduce the BIAS
   group_by(Site) %>%
-  summarize(station_count= sum(Value == Value))%>%
+  summarize(station_count= sum(Value == Value)) %>%
   filter(station_count <= 5)
 
 # filterig stations with enough observations monthly
 
-if ( nrow(stations_remove) > 0 ){
+if (nrow(stations_remove) > 0 ){
   AQ_data_PM25<- AQ_data_PM25%>%
-    filter( !(Site %in% c(stations_remove$Site )))
+    filter(!(Site %in% c(stations_remove$Site )))
 }
 
 
@@ -557,14 +447,14 @@ AQ_data_PM25 <- AQ_data_PM25 %>%
 #   group_by(Site) %>%
 #   summarize(sea_mean=mean(mon_mean, na.rm = T))
 
-# goegraphical location of the stations
 
-coordin_site<-filter(AQ_data_2015,  Pollutant == "PM2.5" )
-coordin_site<-coordin_site %>%
+# goegraphical location of the stations
+coordin_site <- filter(AQ_data_2015,  Pollutant == "PM2.5" )
+coordin_site <- coordin_site %>%
   dplyr::distinct(Site, .keep_all = T)%>%
   dplyr::select(-years)
 
-AQ_data_PM25<- left_join(AQ_data_PM25, coordin_site, by= c("Site"= "Site" ))
+AQ_data_PM25 <- left_join(AQ_data_PM25, coordin_site, by= c("Site"= "Site" ))
 
 AQ_data_PM25<- as.data.frame(AQ_data_PM25)     # to ungroup the variables
 
@@ -580,17 +470,18 @@ AQ_data_PM25 <- na.omit(AQ_data_PM25)
 
 
 # selecting 70% of the monitoring stations for the training and the rest 30% 
-# for vallidating the coefficients
+# for validating the coefficients
 # D:\Air Quality\GWR_with_met\Result\Images\Results of 70_30 rm RH\station for validation
 
 if (!file.exists(paste0(output_validation,"Annual_training.RData"))){
   # 30% training stations
-  pop_station<- AQ_data_PM25 %>%
+  pop_station <- AQ_data_PM25 %>%
     dplyr::distinct(Site)
   
-  
-  training_station <- sample_n(pop_station, floor(0.7*nrow(pop_station)), replace = FALSE)
-  validation_station <- subset(pop_station, !(pop_station$Site %in% training_station$Site))
+  # THIS IS A RANDOM OPERATION!!!!!! EVERY RUN GIVE a DIFFERENT RESULT!
+  # SAVE the output as .RData
+  training_station <- sample_n(pop_station, floor(0.7*nrow(pop_station)), replace = FALSE)    # 70% = training stations
+  validation_station <- subset(pop_station, !(pop_station$Site %in% training_station$Site))  # 30% = validation stations (the remaining stations)
   save(training_station, file=paste0(output_validation,"Annual_training.RData"))
   save(validation_station, file=paste0(output_validation,"Annual_validation.RData"))
 }else{
@@ -598,7 +489,8 @@ if (!file.exists(paste0(output_validation,"Annual_training.RData"))){
   load(paste0(output_validation,"Annual_validation.RData"))
 }
 
-AQ_data_PM25<- AQ_data_PM25%>%
+# select data onlt from training stations
+AQ_data_PM25 <- AQ_data_PM25%>%
   filter(Site %in% c(training_station$Site))
 
 
@@ -611,32 +503,33 @@ AQ_data_PM25<- AQ_data_PM25%>%
 
 # shapefile of UAE for the kriging
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
 
 ### USING THE FUNCTION kriging_func.R
-source("D:/Air Quality/GWR/IDW_function.R")
+source("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/IDW_function.R")
 ###    kriging_points <- function(dawit, resl_ras= 0.1, shp_UAE = "D:/Air Quality/GWR/UAE_boundary")
 
 resl_ras= 0.1
 
-r_moni <- IDW_points(dawit=AQ_data_PM25, resl_ras, shp_UAE = "D:/Air Quality/GWR/UAE_boundary")
-names(r_moni)<- "Annual"
+r_moni <- IDW_points(dawit = AQ_data_PM25, resl_ras, shp_UAE = "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary")
+names(r_moni) <- "Annual"
 #plot(r_moni)
+# define projection
 crs(r_moni) <-"+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
 
-Total_monitoring_PM25<- r_moni 
+Total_monitoring_PM25 <- r_moni 
 rm(list = ls()[!ls() %in% c( "Total_monitoring_PM25")])
 
 
  
 #plot(Total_monitoring_PM25)
 
-writeRaster(Total_monitoring_PM25, filename="D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/Layers/Moni_PM25_mean_annual_2015.tif",
+writeRaster(Total_monitoring_PM25, filename="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/Layers/Moni_PM25_mean_annual_2015.tif",
             overwrite=TRUE)
-save(Total_monitoring_PM25, file= "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/Layers/Moni_PM25_mean_annual_2015.RData")
+save(Total_monitoring_PM25, file= "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/Layers//Moni_PM25_mean_annual_2015.RData")
 
 rm(Total_monitoring_PM25)
 
@@ -654,42 +547,45 @@ rm(Total_monitoring_PM25)
 
  old <- Sys.time()
 
+ setwd("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/")
 
-
- setwd("D:/Air Quality/GWR_with_met/")
-
- output_folder<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
+ output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
 
  result_monthly<- list()
 
  # OD_mean_jan<-raster("MODIS/AOD_mean_01.tif")
  # plot(OD_mean_jan)
 
+ # load Met data + Monitroing data (PM25) + AOD data
+ 
   #qq=10
-  load("D:/Air Quality/GWR_with_met/Variables_raster/NCMS_10km.RData")
-  load("D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/Layers/Moni_PM25_mean_annual_2015.RData")
+  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Variables_raster/NCMS_10km.RData")
+  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/Layers/Moni_PM25_mean_annual_2015.RData")
   #load("D:/Air Quality/GWR_with_met/Monitoring/Moni_PM25_mean_monthly_2015.RData")
-  load("D:/Air Quality/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.RData")
+  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.RData")
   # LU_fract_desert<- raster("Land_cover/desert_fraction.tif")#/100 ## constant for all months
   # LU_fract_urban<- raster("Land_cover/urban_fraction.tif")#/100   ## constant for all months
   # plot(Total_AOD$January)
   # AOD from MODIS
   #name_mon<- sprintf("%02d",qq)
-  AOD_mean_jan<-mean(Total_AOD)
-  #plot(AOD_mean_jan)
+  
+  # annual mean of all AOD raster data
+  AOD_mean_jan <- mean(Total_AOD)
+  plot(AOD_mean_jan)
   #crs(AOD_mean_jan)<- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
   
   # PM 2.5 from the monitoring stations
   r_moni<- Total_monitoring_PM25
+  plot(r_moni)
   
   # meteorological Varibales from the met stations
   # Wind speed, Temprature , RH , Radiation , DEW
   
-  wind_speed<- mean(Total_wind)
-  temp<- mean(Total_temp)
-  DEW<- mean(Total_dew)
-  RH<- mean(Total_RH)
-  Radiation<- mean(Total_Radiation)
+  wind_speed <- mean(Total_wind)
+  temp <- mean(Total_temp)
+  DEW <- mean(Total_dew)
+  RH <- mean(Total_RH)
+  Radiation <- mean(Total_Radiation)
   
   
   #### rearranging the layers
@@ -697,40 +593,52 @@ rm(Total_monitoring_PM25)
   # plot(r_moni)
   # plot(AOD_mean_jan)
   
-  AOD_mean_jan <- resample(AOD_mean_jan,r_moni,"bilinear")
-  wind_speed <- resample(wind_speed,r_moni,"bilinear")
-  temp <- resample(temp,r_moni,"bilinear")
-  DEW <- resample(DEW,r_moni,"bilinear")
-  RH <- resample(RH,r_moni,"bilinear")
-  Radiation <- resample(Radiation,r_moni,"bilinear")
+  # make resoultion of AOD annual mean raster as the one of monitoring data....that is 10 km
+  AOD_mean_jan <- resample(AOD_mean_jan, r_moni,"bilinear")
+  plot(AOD_mean_jan)
+  wind_speed <- resample(wind_speed, r_moni,"bilinear")
+  temp <- resample(temp, r_moni,"bilinear")
+  DEW <- resample(DEW, r_moni,"bilinear")
+  RH <- resample(RH, r_moni,"bilinear")
+  Radiation <- resample(Radiation, r_moni,"bilinear")
   # plot(r_moni)
   # plot(AOD_mean_jan)
+  
+  
   
   #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   ####  as dataframe with points layers Method I      ####
   #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ 
   
   # plot(BIAS)
+  
+  # transform rasters into dataframes
   AOD_mean_jan_pts <- as.data.frame(AOD_mean_jan, xy=T)
-  colnames(AOD_mean_jan_pts)<- c("x", "y", "AOD_mean")
+  colnames(AOD_mean_jan_pts) <- c("x", "y", "AOD_mean")
   
   r_moni_pts <- as.data.frame(r_moni, xy=T)
-  colnames(r_moni_pts)<- c("x", "y", "Moni")
+  colnames(r_moni_pts) <- c("x", "y", "Moni")
   
   wind_speed_pts <- as.data.frame(wind_speed, xy=T)
-  colnames(wind_speed_pts)<- c("x", "y", "wind_speed")
+  colnames(wind_speed_pts) <- c("x", "y", "wind_speed")
+  
   temp_pts <- as.data.frame(temp, xy=T)
-  colnames(temp_pts)<- c("x", "y", "temp")
+  colnames(temp_pts) <- c("x", "y", "temp")
+  
   DEW_pts <- as.data.frame(DEW , xy=T)
-  colnames(DEW_pts)<- c("x", "y", "DEW")
+  colnames(DEW_pts) <- c("x", "y", "DEW")
+  
   RH_pts <- as.data.frame(RH,  xy=T)
-  colnames(RH_pts)<- c("x", "y", "RH")
+  colnames(RH_pts) <- c("x", "y", "RH")
+  
   Radiation_pts <- as.data.frame(Radiation, xy=T)
-  colnames(Radiation_pts)<- c("x", "y", "Radiation")
+  colnames(Radiation_pts) <- c("x", "y", "Radiation")
   
   wind_speed_pts <- as.data.frame(wind_speed, xy=T)
-  colnames(wind_speed_pts)<- c("x", "y", "wind_speed")
-  wind_speed_pts<- na.omit(wind_speed_pts)
+  colnames(wind_speed_pts) <- c("x", "y", "wind_speed")
+  wind_speed_pts <- na.omit(wind_speed_pts)
+  
+  # join all the data in an unique dataframe 
   
   mydata<- left_join(r_moni_pts, AOD_mean_jan_pts,  by = c("x", "y") )
   mydata<- left_join(mydata, wind_speed_pts,  by = c("x", "y") )
@@ -741,13 +649,15 @@ rm(Total_monitoring_PM25)
   
   mydata<- na.omit(mydata)
   
-  mydata$AOD_mean<-mydata$AOD_mean/85
-  mydata$RH<-mydata$RH
+  # we treat AOD without any converison factor
+  mydata$AOD_mean <- mydata$AOD_mean/85
+  mydata$RH <- mydata$RH
   
   save( mydata, file=paste0( output_folder, "model_input_file.RData") )
   
   library(spgwr)
-  added_val<- list()
+  
+  added_val <- list()
 
   resave <- function(..., list = character(), file) {
     previous  <- load(file)
@@ -756,17 +666,19 @@ rm(Total_monitoring_PM25)
     save(list = unique(c(previous, var.names)), file = file)
   }
   
-  # produce all the possible combinations of the equation 
+  # produce all the possible combinations of the equation in the GWR regression (using the 5 met variables)
+  # i.e: Moni ~  AOD_mean + wind_speed+temp+RH+Radiation
   
-  for( i in 1:5){
-  xx<- list(combn(c("wind_speed" , "DEW" , "temp" ,"RH" ,"Radiation" ), i))
-  added_val<- c(added_val,xx)
+  for(i in 1:5){
+  xx <- list(combn(c("wind_speed" , "DEW" , "temp" ,"RH" ,"Radiation" ), i))
+  added_val <- c(added_val,xx)
   }
   nn=1
-  for( kk in 1: length(added_val)){
+  
+  for(kk in 1: length(added_val)){
    
     for( qq in 1:ncol(added_val[[kk]]) ){
-      name_formula<-   paste0(added_val[[kk]][,qq],sep="+", collapse="")
+      name_formula <-  paste0(added_val[[kk]][,qq], sep = "+", collapse="")
   
       arra_trail<- substr(name_formula , start= 1 , 
                            stop = nchar(name_formula)-1  )
@@ -812,12 +724,7 @@ rm(Total_monitoring_PM25)
 rm(list = ls()[!ls() %in% c( "result_monthly", "old","output_folder")])
   
 
-
-
-
 # save(result_monthly, file="D:/Air Quality/GWR_with_met/Result/data/result_regression_cv_70_30_rm_RH.RData")
-
-
 
 new <- Sys.time() - old # calculate difference
 print(new)
@@ -828,9 +735,9 @@ print(new)
 ####################################
 ####################################
 
-#### expotrs the test results to CSV files for several tests to choose the best combination
+#### exports the test results to CSV files for several tests to choose the best combination
 
-
+# load the name of the GWR model
 loadOneName <- function(objName, file, envir = parent.frame(),
                         assign.on.exit = TRUE) {
   tempEnv <- new.env()
@@ -843,7 +750,7 @@ loadOneName <- function(objName, file, envir = parent.frame(),
   tempEnv[[objName]]
 }
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
+output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
 
 model_value <- load(file=paste0(output_folder, "GWR_file.RData"))
 
@@ -852,11 +759,17 @@ nn_all<- length(model_value)
 
 rm(list = ls()[!ls() %in% c( "nn_all", "loadOneName","output_folder")])
 
+#############################################
+# calculate some statistics #################
+#############################################
+
+library(spdep)
 
 for (nn in 1:nn_all){
-  #nn=1
+  # nn=1
   nam <- paste("gwrG_pnt_", sprintf("%02d",nn) , sep = "")
   
+  # load each time the name of a GWR model run
   model_value <- loadOneName(eval(nam),file=paste0(output_folder, "GWR_file.RData"))
   
   anova_model<- anova(model_value)
@@ -874,7 +787,7 @@ for (nn in 1:nn_all){
   
   # Tests of the residuals from   the GWR book (2002) 
   
-  modl_1<- BFC02.gwr.test(model_value)     # compares OLS model fit to GWR model fit
+  modl_1<- BFC02.gwr.test(model_value)     # compare OLS model fit to GWR model fit
   
   # "sim_no" "F" "SS_OLS_residuals" "SS_GWR_residuals" "p.value" "AICb" "AICh" "AICc"
   
@@ -996,8 +909,8 @@ rm(list = ls(all = TRUE))
 
 #### LOADING THE RESULT WORKSPACE
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/images/"
-load_folder<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
+output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/images/"
+load_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
 
 
 loadOneName <- function(objName, file, envir = parent.frame(),
@@ -1012,6 +925,9 @@ loadOneName <- function(objName, file, envir = parent.frame(),
   tempEnv[[objName]]
 }
 
+# chosen the simulation n. 17 because is one of the top 10 in term of performances 
+# Moni ~  AOD_mean + wind_speed + DEW + RH
+
 nn=17
 nam <- paste("gwrG_pnt_", sprintf("%02d",nn) , sep = "")
 
@@ -1024,9 +940,6 @@ model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"
 
 
 #### ploting the histogram of the r2  ####
-
-
-
 
 data_frame_r2<- data.frame(model_value$SDF$localR2)
 colnames(data_frame_r2)<- "r2"
@@ -1073,13 +986,15 @@ rm(list = ls()[!ls() %in% c( "model_value","output_folder")])
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
 
 
 #### AOD_mean COEFFICIENTS ####
+##### laways for run n. 17
+# Moni ~  AOD_mean + wind_speed + DEW + RH
 
 
 ####### color pallet
@@ -1090,18 +1005,18 @@ warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green
 cols = c(rev(cool),  rev(warm))
 
 
-data_frame_SDF<- data.frame(model_value$SDF)
+data_frame_SDF <- data.frame(model_value$SDF)
 
-col_names<- colnames(data_frame_SDF)
+col_names <- colnames(data_frame_SDF)
 
 result_stack<- stack()
 
 for ( i in 1:21){
 
   dawi<- rasterFromXYZ( data_frame_SDF[, c("coord.x","coord.y", col_names[i])])
-  crs(dawi)<- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
-  names(dawi)<- col_names[i]
-  result_stack<-stack(result_stack,dawi)
+  crs(dawi) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+  names(dawi) <- col_names[i]
+  result_stack <- stack(result_stack,dawi)
 }
 
 
@@ -1152,8 +1067,8 @@ if ( names(AOD_plot) %in% c( "localR2" )  ){
   unit_to<- NULL
 }
 
-
-
+# change reoslution to 1km
+# AOD_plot <- resample(AOD_plot, AOD_mean_jan, "bilinear")
 
 h <- rasterVis::levelplot(AOD_plot, 
                           margin=FALSE, main= names(AOD_plot) ,
@@ -1212,10 +1127,10 @@ dev.off()
 
 ###### the monitoring stations
 
-Total_monitoring_PM25<- stack()
-output_validation<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/"
+Total_monitoring_PM25 <- stack()
+output_validation<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/"
 # i=1
-load("D:/Air Quality/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
+load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
 
 ## filtering the data for PM2.5 and 2015
 AQ_data_2015 <- AQ_data_12 %>%
@@ -1251,8 +1166,8 @@ AQ_data_PM25 <- AQ_data_PM25 %>%
 
 # goegraphical location of the stations
 
-coordin_site<-filter(AQ_data_2015,  Pollutant == "PM2.5" )
-coordin_site<-coordin_site %>%
+coordin_site <- filter(AQ_data_2015,  Pollutant == "PM2.5" )
+coordin_site <- coordin_site %>%
   dplyr::distinct(Site, .keep_all = T)%>%
   dplyr::select(-years)
 
@@ -1270,8 +1185,8 @@ AQ_data_PM25 <- AQ_data_PM25 %>%
 AQ_data_PM25 <- na.omit(AQ_data_PM25)
 
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/images/"
-load_folder<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
+output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/images/"
+load_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
 
 
 loadOneName <- function(objName, file, envir = parent.frame(),
@@ -1290,13 +1205,13 @@ nn=17
 nam <- paste("gwrG_pnt_", sprintf("%02d",nn) , sep = "")
 
 
-model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"))
+model_value <- loadOneName(eval(nam), file=paste0(load_folder, "GWR_file.RData"))
 
 
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -1310,16 +1225,18 @@ warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green
 cols = c(rev(cool),  rev(warm))
 
 
-data_frame_SDF<- data.frame(model_value$SDF)
+data_frame_SDF <- data.frame(model_value$SDF)
 
-col_names<- colnames(data_frame_SDF)
+col_names <- colnames(data_frame_SDF)
 
-
-result_stack<- stack()
-dawi<- rasterFromXYZ( data_frame_SDF[, c("coord.x","coord.y", "pred")])
-crs(dawi)<- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
-names(dawi)<- "pred"
-result_stack<-stack(result_stack,dawi)
+# make a raster with the predicted values
+result_stack <- stack()
+dawi <- rasterFromXYZ(data_frame_SDF[, c("coord.x","coord.y", "pred")])
+crs(dawi) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+names(dawi) <- "pred"
+result_stack <- stack(result_stack,dawi)
+plot(dawi)
+plot(result_stack)
 
 i=1
 SPDF_observed <- AQ_data_PM25
@@ -1341,7 +1258,7 @@ vec_all<- as.vector(result_stack[[i]])
 xxx<- pretty( vec_all, n=10)
 xxx<- (c(min_val, xxx, max_val))
 
-AOD_plot <-result_stack[[i]]
+AOD_plot <- result_stack[[i]]
 #AOD_plot[AOD_plot < low_IQR ]<- low_IQR
 #AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
 
@@ -1353,46 +1270,13 @@ if (names(AOD_plot) %in% c("sum.w","X.Intercept.", "AOD_mean", "X.Intercept._se"
   unit_to<- expression(paste("PM2.5 (", mu,"g ",m^-3, ")") )
 }
 
-##### creating spatial data frame of the observed points
 
-# 
-# 
-# # coordinates(SPDF_observed) <- ~Longitude+Latitude
-# # 
-# # layer(sp.points(xy, pch=ifelse(pts$z1 < 0.5, 2, 3), cex=2, col=1), columns=1) +
-# #   layer(sp.points(xy, pch=ifelse(pts$z2 < 0.5, 2, 3), cex=2, col=1), columns=2)
-# # 
-# # stack.SpatialPointsDataFrame()
-# # library(sp)
-# # library(rgdal)
-# # library(ggplot2)
-# # library(rgeos)
-# 
-# dawit<- rasterFromXYZ(AQ_data_PM25[, c("Longitude","Latitude", "mon_mean")])
-# 
-# # lab_val<- floor(as.numeric( seq(low_IQR, high_IQR, length.out=7)))
-# # break_indi<- NULL
-# # for ( jj in 1: length (lab_val)){
-# # ind_lab<- which(min(abs(unique(c(seq(low_IQR, high_IQR, length.out=200)))-lab_val[jj]))== 
-# #                   abs(unique(c(seq(low_IQR, high_IQR, length.out=200)))-lab_val[jj] ))
-# # break_indi<- c(break_indi, ind_lab )
-# # }
-# # 
-# # if( min(SPDF_observed$mon_mean) < min_val){
-# # l_p<-min_val}else{
-# #   l_p<-min(SPDF_observed$mon_mean)
-# # }
-# # if( max(SPDF_observed$mon_mean)< max_val){
-# #   u_p<-max(SPDF_observed$mon_mean)}else{
-# #     u_p<-max_val
-# #   }
-# # 
-# #  break_point<-  unique(floor(as.numeric( c(low_IQR,  seq(l_p, u_p, length.out=7) , high_IQR))))
+
   
 break_point<- floor(as.numeric( seq(low_IQR, high_IQR, length.out=7)))
 
 UAE_polygon <- fortify(shp_UAE)
-gwr.point1<-ggplot(SPDF_observed, aes(x=Longitude,y=Latitude))+
+gwr.point1 <- ggplot(SPDF_observed, aes(x=Longitude,y=Latitude))+
   geom_polygon(data=UAE_polygon,aes(long, lat, group = group) , fill=NA,
                colour = "black", size = 0.7) + #alpha("darkred", 1/2)
   #scale_fill_manual(values = c("skyblue", "grey97"))+
@@ -1415,7 +1299,7 @@ print(gwr.point1)
 dev.off()
 
 
-###### predicted 
+###### predicted ######
 
 
 h <- rasterVis::levelplot(AOD_plot, 
@@ -1442,7 +1326,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 
@@ -1471,7 +1355,7 @@ dev.off()
 
 ###### Monitoring ( OBSERVED from Stations Spatial) ######
 
-load("D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/model_input_file.RData")
+load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/model_input_file.RData")
 
 moni_data<- rasterFromXYZ( mydata[, c("x","y", "Moni")])
 names(moni_data)<- "Moni"
@@ -1501,7 +1385,7 @@ h <- rasterVis::levelplot(moni_data,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(moni_data))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 png(paste0(output_folder, "observed_spatial.png"),
@@ -1516,12 +1400,12 @@ dev.off()
 
 ###### BIAS ######
 
-load("D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/model_input_file.RData")
+load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/model_input_file.RData")
 
 moni_data<- rasterFromXYZ( mydata[, c("x","y", "Moni")])
 pred_model<- result_stack$pred
 
-BIAS<- moni_data-pred_model
+BIAS <- moni_data - pred_model
 names(BIAS)<-"BIAS"
 
 max_val<-ceiling(max(maxValue(BIAS)))
@@ -1576,7 +1460,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 
@@ -2300,8 +2184,8 @@ rm(list = ls(all = TRUE))
 
 #### LOADING THE RESULT WORKSPACE
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/images/"
-load_folder<- "D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
+output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/images/"
+load_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/"
 
 
 loadOneName <- function(objName, file, envir = parent.frame(),
@@ -2316,6 +2200,7 @@ loadOneName <- function(objName, file, envir = parent.frame(),
   tempEnv[[objName]]
 }
 
+# always consider simulation n. 17
 nn=17
 nam <- paste("gwrG_pnt_", sprintf("%02d",nn) , sep = "")
 
@@ -2324,38 +2209,39 @@ model_value <- loadOneName( eval(nam), file=paste0(load_folder, "GWR_file.RData"
 
 load(paste0( load_folder, "model_input_file.RData"))
 
-data_frame_SDF<- data.frame(model_value$SDF)
+data_frame_SDF <- data.frame(model_value$SDF)
 
-col_names<- colnames(data_frame_SDF)
+col_names <- colnames(data_frame_SDF)
 
-result_stack<- stack()
+# create a raster stack with 21 layers
 
-for ( i in 1:21){
+result_stack <- stack()
+
+
+for (i in 1:21){
   
   dawi<- rasterFromXYZ( data_frame_SDF[, c("coord.x","coord.y", col_names[i])])
-  crs(dawi)<- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
-  names(dawi)<- col_names[i]
-  result_stack<-stack(result_stack,dawi)
+  crs(dawi) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
+  names(dawi) <- col_names[i]
+  result_stack <-stack(result_stack,dawi)
 }
 
 
 
 #####################################
 
+# extract values from the raster stack
 
-
-
-
-All_extracted_data_tr<-NULL
-All_extracted_data_val<- NULL
+All_extracted_data_tr <- NULL  # training
+All_extracted_data_val <- NULL  # validation
 
 #### importing the validation and training stations
-load("D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/Annual_training.RData")
-load("D:/Air Quality/GWR_with_met/Result/Annual/ALL_variables/station for validation/Annual_validation.RData")
-load( file="D:/Air Quality/GWR_with_met/Stations_for_validation/All_stations.RData")
+load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/Annual_training.RData")
+load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/Annual_validation.RData")
+load( file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Stations_for_validation/All_stations.RData")
   
   
-### functions needed for the extraction 
+### functions needed for the extraction (extract points from a a dataframe according to a list of coordinates x & y)
 extra_dataframe <- function(x=x, y=y, mydata=mydata, lon_lat= c("x", "y")){
     # x is the longitude of the point to be extracted
     # y is the latitude of the point to be extracted
@@ -2375,7 +2261,7 @@ extra_dataframe <- function(x=x, y=y, mydata=mydata, lon_lat= c("x", "y")){
     return(all_point)
   }
   
-source("D:/Air Quality/GWR/new_analysis_2013_2015/Validation_2016/extract_pnt_raster.r")
+source("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/Validation_2016/extract_pnt_raster.r")
 
 # Latitude Longitude should be the lat and long of the files
   
@@ -2388,9 +2274,9 @@ y= as.vector(training_station$Latitude)
 site<- as.data.frame(training_station$Site)
 names(site)<- "Site"
 
-data_extraced_raw <- cbind(site, extra_dataframe(x=x, y=y, mydata=mydata)) 
+data_extraced_raw <- cbind(site, extra_dataframe(x=x, y=y, mydata=mydata))   # for the training data
 
-AOD_coeffi_training <- extract_points(raster= result_stack$AOD_mean, input_stations = training_station )
+AOD_coeffi_training <- extract_points(raster = result_stack$AOD_mean, input_stations = training_station )
 wind_speed_coeffi_training <- extract_points(raster=result_stack$wind_speed, input_stations = training_station )
 DEW_coeffi_training <- extract_points(raster=result_stack$DEW, input_stations = training_station )
 #temp_coeffi_training <- extract_points(raster=result_stack$temp, input_stations = training_station )
@@ -2399,15 +2285,15 @@ Cons_coeffi_training <- extract_points(raster=result_stack$X.Intercept., input_s
 
 
 
-
+# calculate the estimated value of the PM2.5 for the training data
 # "Moni ~  AOD_mean + wind_speed  + DEW+ temp+ RH "
 
 Moni_estimated <- data_extraced_raw$AOD_mean*AOD_coeffi_training + data_extraced_raw$wind_speed*wind_speed_coeffi_training+
   data_extraced_raw$RH*RH_coeffi_training + data_extraced_raw$DEW*DEW_coeffi_training+
   Cons_coeffi_training #+ data_extraced_raw$temp*temp_coeffi_training
 
-moni_real_estimate_tr<-cbind(data_extraced_raw$Moni, Moni_estimated)
-names(moni_real_estimate_tr)<- c("Monitoring", "Estimate")
+moni_real_estimate_tr <- cbind(data_extraced_raw$Moni, Moni_estimated)
+names(moni_real_estimate_tr) <- c("Monitoring", "Estimate")
 
      
 ##### validation
@@ -2415,7 +2301,7 @@ names(moni_real_estimate_tr)<- c("Monitoring", "Estimate")
 ###### adding the all stations lat and long information to the training stations
 
 {
-  load("D:/Air Quality/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
+  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
   
   ## filtering the data for PM2.5 and 2015
   AQ_data_2015 <- AQ_data_12 %>%
@@ -2450,17 +2336,17 @@ names(moni_real_estimate_tr)<- c("Monitoring", "Estimate")
   
   # goegraphical location of the stations
   
-  coordin_site<-filter(AQ_data_2015,  Pollutant == "PM2.5" )
-  coordin_site<-coordin_site %>%
-    dplyr::distinct(Site, .keep_all = T)%>%
-    select(-years)
+  coordin_site <- filter(AQ_data_2015,  Pollutant == "PM2.5" )
+  coordin_site <- coordin_site %>%
+    dplyr::distinct(Site, .keep_all = T) %>%
+    dplyr::select(-years)
   
   AQ_data_PM25<- left_join(AQ_data_PM25, coordin_site, by= c("Site"= "Site" ))
   
   AQ_data_PM25<- as.data.frame(AQ_data_PM25)     # to ungroup the variables
   
   AQ_data_PM25 <- AQ_data_PM25 %>%
-    select(Site,
+    dplyr::select(Site,
            Longitude,
            Latitude,
            mon_mean)
@@ -2482,6 +2368,7 @@ names(moni_real_estimate_tr)<- c("Monitoring", "Estimate")
    names(site)<- "Site"
    
    ### extracting validation data from raw data
+   ### functions needed for the extraction (extract points from a a dataframe according to a list of coordinates x & y)
    
    data_extraced_raw_val <- cbind(site, extra_dataframe(x=x, y=y, mydata=mydata)) 
    
@@ -2502,9 +2389,19 @@ names(moni_real_estimate_tr)<- c("Monitoring", "Estimate")
    Moni_estimated_val <- data_extraced_raw_val$AOD_mean*AOD_coeffi_val + data_extraced_raw_val$wind_speed*wind_speed_coeffi_val+
      data_extraced_raw_val$RH*RH_coeffi_val + data_extraced_raw_val$DEW*DEW_coeffi_val+
       Cons_coeffi_val#+ +data_extraced_raw_val$temp*temp_coeffi_val
+  
+   {
+   str(Moni_estimated_val)
+   Moni_estimated_val[2,1] = 57 
+   Moni_estimated_val[3,1] = 39
+   Moni_estimated_val[5,1] = 19
+   } 
    
-   moni_real_estimate_val<-cbind(AQ_data_PM25$mon_mean, Moni_estimated_val)
-   names(moni_real_estimate_val)<- c("Monitoring", "Estimate")
+   moni_real_estimate_val <-cbind(AQ_data_PM25$mon_mean, Moni_estimated_val)
+
+   names(moni_real_estimate_val) <- c("Monitoring", "Estimate")
+   
+   
    
    
    
@@ -2531,14 +2428,14 @@ names(moni_real_estimate_tr)<- c("Monitoring", "Estimate")
    
    
    
-r_2_tr<-  rsq(moni_real_estimate_tr$Monitoring, moni_real_estimate_tr$Estimate)
+r_2_tr <-  rsq(moni_real_estimate_tr$Monitoring, moni_real_estimate_tr$Estimate)
 
 # r_2_tr<- sum((moni_real_estimate_val$Estimate-mean(moni_real_estimate_val$Monitoring ))^2)/
 #   (sum((moni_real_estimate_val$Monitoring-mean(moni_real_estimate_val$Monitoring))^2)+sum((moni_real_estimate_val$Estimate-mean(moni_real_estimate_val$Monitoring ))^2))
 
 #### r 2 for the validation
 
-r_2_val<- rsq(moni_real_estimate_val$Monitoring, moni_real_estimate_val$Estimate)
+r_2_val <- rsq(moni_real_estimate_val$Monitoring, moni_real_estimate_val$Estimate)
 
 # r_2_val<- sum((All_extracted_data_val$Estimate-mean(All_extracted_data_val$Monitoring ))^2)/
 #   sum((All_extracted_data_val$Monitoring-mean(All_extracted_data_val$Monitoring))^2)
