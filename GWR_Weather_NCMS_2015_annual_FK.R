@@ -1159,6 +1159,12 @@ AQ_data_PM25 <- AQ_data_PM25 %>%
   group_by(Site, years) %>%
   summarize(mon_mean= mean(Value, na.rm = T))
 
+# Annual mean ALL 2015
+AQ_data_PM25_2015 <- AQ_data_PM25 %>%
+  group_by(years) %>%
+  summarize(mon_mean= mean(mon_mean, na.rm = T))
+
+
 # # monthly mean of january
 # AQ_data_PM25 <- AQ_data_PM25 %>%
 #   group_by(Site) %>%
@@ -1226,6 +1232,23 @@ cols = c(rev(cool),  rev(warm))
 
 
 data_frame_SDF <- data.frame(model_value$SDF)
+
+
+##################################################
+##################################################
+##################################################
+
+# annual mean of predicted PM2.5
+predicted_PM25_annual <- data_frame_SDF %>%
+  summarise(annual_PM25_pred = mean(pred),
+            annual_PM25_SE = mean(pred.se),
+            annual_intercept = mean(X.Intercept.),
+            annual_R2 = mean(localR2))
+
+##################################################
+##################################################
+##################################################
+
 
 col_names <- colnames(data_frame_SDF)
 
@@ -1357,6 +1380,18 @@ dev.off()
 
 load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/model_input_file.RData")
 
+
+# calculate some statistics from the geospatial data "mydata"
+
+annual_means <- mydata %>%
+  summarise(mean_PM25 = mean(Moni),
+            mean_AOD = mean(AOD_mean),
+            mean_wins_speed = mean(wind_speed),
+            mean_RH = mean(RH),
+            mean_Temp = mean(temp),
+            mean_DEW = mean(DEW))
+
+
 moni_data<- rasterFromXYZ( mydata[, c("x","y", "Moni")])
 names(moni_data)<- "Moni"
 crs(moni_data)<- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
@@ -1401,6 +1436,7 @@ dev.off()
 ###### BIAS ######
 
 load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/model_input_file.RData")
+
 
 moni_data<- rasterFromXYZ( mydata[, c("x","y", "Moni")])
 pred_model<- result_stack$pred
@@ -2481,67 +2517,59 @@ dev.off()
 
 
 
-# #### RMSE for the training 
-# 
-# dawit<-function(xx){
-#   zz<- sqrt(sum(xx)/(length(xx)))
-# }
-# 
-# RMSE_tr<- moni_real_estimate_tr%>%
-#   mutate(diff=(Monitoring-Estimate)^2)%>%
-#   #group_by(Month)%>%
-#   summarise(RMSE= dawit(diff))
-# 
-# 
-# #### RMSE for the validation
-# 
-# RMSE_val<- moni_real_estimate_val%>%
-#   mutate(diff=(Monitoring-Estimate)^2)%>%
-#   #group_by(Month)%>%
-#   summarise(RMSE= dawit(diff))
-# mean(RMSE_val$RMSE)
-# mean(RMSE_tr$RMSE)
-# 
-# # x <- sort(runif(10, min=0, max=10))
-# # y <- runif(10, min=2, max=5)
-# # 
-# # #Polygon-Plot
-# # plot(x,y, type="n", ylim=c(0,5))
-# # polygon(c(x[1], x, x[length(x)]), c(0, y, 0), col="green")
-# 
-# 
-# 
-# library(ggplot2)
-# sp <- ggplot() + 
-#   #geom_point(data=All_extracted_data_val, aes(x=Monitoring, y=Estimate ), shape=3, col="blue")+
-#   geom_point(data=moni_real_estimate_tr, aes(x=Monitoring, y=Estimate ),shape=3, col="red")+
-#   xlim(0,100)+ ylim(0,100)+
-#   geom_abline(mapping = NULL, data = NULL,  slope=1, intercept=0,
-#               na.rm = FALSE, show.legend = NA,size = 1)
-#   
-# sp#+facet_wrap(~ Month, ncol=3)
-# 
-# 
-# 
-# 
-# sp <- ggplot(moni_real_estimate_val, aes(x=Monitoring, y=Estimate )) + geom_point(shape=3, col="blue")+
-#   xlim(0,100)+ ylim(0,100)+
-#   geom_abline(mapping = NULL, data = NULL,  slope=1, intercept=0,
-#               na.rm = FALSE, show.legend = NA,size = 1)#+
-#   #facet_wrap(~ Month, ncol=3)
-# sp
+#### RMSE for the training
+
+dawit<-function(xx){
+  zz<- sqrt(sum(xx)/(length(xx)))
+}
+
+RMSE_tr<- moni_real_estimate_tr%>%
+  mutate(diff=(Monitoring-Estimate)^2)%>%
+  #group_by(Month)%>%
+  summarise(RMSE= dawit(diff))
+
+
+#### RMSE for the validation
+
+RMSE_val<- moni_real_estimate_val%>%
+  mutate(diff=(Monitoring-Estimate)^2)%>%
+  #group_by(Month)%>%
+  summarise(RMSE= dawit(diff))
+mean(RMSE_val$RMSE)
+mean(RMSE_tr$RMSE)
+
+# x <- sort(runif(10, min=0, max=10))
+# y <- runif(10, min=2, max=5)
+#
+# #Polygon-Plot
+# plot(x,y, type="n", ylim=c(0,5))
+# polygon(c(x[1], x, x[length(x)]), c(0, y, 0), col="green")
+
+
+
+library(ggplot2)
+sp <- ggplot() +
+  #geom_point(data=All_extracted_data_val, aes(x=Monitoring, y=Estimate ), shape=3, col="blue")+
+  geom_point(data=moni_real_estimate_tr, aes(x=Monitoring, y=Estimate ),shape=3, col="red")+
+  xlim(0,100)+ ylim(0,100)+
+  geom_abline(mapping = NULL, data = NULL,  slope=1, intercept=0,
+              na.rm = FALSE, show.legend = NA,size = 1)
+
+sp#+facet_wrap(~ Month, ncol=3)
 
 
 
 
+sp <- ggplot(moni_real_estimate_val, aes(x=Monitoring, y=Estimate )) + geom_point(shape=3, col="blue")+
+  xlim(0,100)+ ylim(0,100)+
+  geom_abline(mapping = NULL, data = NULL,  slope=1, intercept=0,
+              na.rm = FALSE, show.legend = NA,size = 1)#+
+  #facet_wrap(~ Month, ncol=3)
+sp
 
-# to make a movie.......
-# to use with ImageMagik using the commnad line cmd in windows
-# cd into the directory where there are the png files
-# magick -delay 50 -loop 0 *.png Dry_Temperatue_NCMS_1km_DUST_event_02_April_2015.gif
-# magick -delay 50 -loop 0 *.png Irradiance_NCMS_1km_DUST_event_02_April_2015.gif
-# magick -delay 50 -loop 0 *.png Wind_Speed_NCMS_1km_DUST_event_02_April_2015.gif
-  
+
+
+
 
 
 

@@ -158,7 +158,7 @@ for (i in 1:length(filenames)) {
 
 #write_csv(All_AWS_data, "D:/Air Quality/GWR_with_met/met_refined/AWS_concatenated_met_2015.csv")
 
-write_csv(All_AWS_data,"D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/AWS_concatenated_met_2015.csv")
+write_csv(All_AWS_data,"Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/AWS_concatenated_met_2015.csv")
 
 
 #############################################################################################
@@ -166,7 +166,7 @@ write_csv(All_AWS_data,"D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_d
 #############################################################################################
 
 
-setwd("D:/Air Quality/GWR_with_met/Result/Monthly/")
+setwd("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/")
 All_AWS_data <- read_csv("met_refined_data/AWS_concatenated_met_2015.csv")
 # All_AWS_data <- read_csv("AWS_concatenated_DUST_2_April_2015_AVG.csv")
 
@@ -176,7 +176,7 @@ All_AWS_data$DateTime <- paste0(All_AWS_data$year_obs, " ", month.abb[All_AWS_da
 
 # load coordinates of the monitoring stations:
 
-STATIONS_COORDS <- read_csv("D:/Air Quality/GWR_with_met/met_refined/stations_clean_FK.csv") 
+STATIONS_COORDS <- read_csv("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/met_refined/stations_clean_FK.csv") 
 colnames(STATIONS_COORDS) <- c("station", "latitude", "longitude")
 
 # join coordinated of the the station with the total dataset
@@ -261,7 +261,7 @@ library(stringr)
 
 
 # kriging_points <- function(filenames_hourly_NCMS, resl_ras= 0.1, shp_UAE = "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/website_MODIS/UAE_boundary"){
-  kriging_points <- function(filenames_hourly_NCMS, resl_ras= 0.01, shp_UAE = "D:/website_MODIS/UAE_boundary", xx=8){
+  kriging_points <- function(filenames_hourly_NCMS, resl_ras= 0.01, shp_UAE = "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/website_MODIS/UAE_boundary", xx=8){
     
     all_rasters <- stack()  
     
@@ -383,6 +383,7 @@ Total_temp<- stack()
 Total_RH<- stack()
 Total_Radiation<- stack()
 Total_dew<- stack()
+
 for (i in 1:12){
   filenames_hourly_NCMS<- All_AWS_data_1%>%
     filter (mon==i)
@@ -406,18 +407,20 @@ for (i in 1:12){
   
 }
 
-writeRaster(Total_wind, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Wind_NCMS_10km.tif", 
+# monthly rasters in a stack
+
+writeRaster(Total_wind, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/Wind_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_temp, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Temp_NCMS_10km.tif", 
+writeRaster(Total_temp, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/Temp_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_RH, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/RH_NCMS_10km.tif", 
+writeRaster(Total_RH, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/RH_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_Radiation, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Radiation_NCMS_10km.tif", 
+writeRaster(Total_Radiation, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/Radiation_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
-writeRaster(Total_dew, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/DEW_NCMS_10km.tif", 
+writeRaster(Total_dew, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/DEW_NCMS_10km.tif", 
             options="INTERLEAVE=BAND", overwrite = TRUE)
 
-save(Total_wind,Total_temp,Total_RH,Total_Radiation,Total_dew, file="D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/NCMS_10km.RData")
+save(Total_wind,Total_temp,Total_RH,Total_Radiation,Total_dew, file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/NCMS_10km.RData")
 
 
 {
@@ -453,12 +456,13 @@ save(Total_wind,Total_temp,Total_RH,Total_Radiation,Total_dew, file="D:/Air Qual
 ######### AOD for 2015 FROM MODIS ###############################################
 #################################################################################
 
+# monthly rasters (in a stack)
 
-coefi_conver<- 85    # this number is used to change the AOD values to PM2.5 mg/m3 obtaine by the regression of 
+coefi_conver <- 85    # this number is used to change the AOD values to PM2.5 mg/m3 obtaine by the regression of 
 # the station values with the satellite values from MODIS (2015-2016)
 # could also be changed from the ECWMF model values for AOD and PM2.5
 {
-  Total_AOD<- stack()
+  Total_AOD <- stack()
 for (kk in 1:12){
   
     ### for the year of 2016
@@ -467,10 +471,10 @@ for (kk in 1:12){
     
     ### for the year of 2015
     
-    year_req<-sprintf("%04d-",2015)
-    months_req<-sprintf("%02d",kk)
+    year_req <- sprintf("%04d-",2015)
+    months_req <- sprintf("%02d",kk)
     
-    path_name<-paste("Z:/_SHARED_FOLDERS/Air Quality/Phase 1/Pathflow of Phase I_DG/MODIS_LAADS_NASA/2015_MODIS_processed/2015_AOD_tiff_1km/" , year_req ,months_req ,"-**.tif", sep = "")
+    path_name <- paste("Z:/_SHARED_FOLDERS/Air Quality/Phase 1/Pathflow of Phase I_DG/MODIS_LAADS_NASA/2015_MODIS_processed/2015_AOD_tiff_1km/" , year_req ,months_req ,"-**.tif", sep = "")
     
     datafiles <- Sys.glob(path_name) #Or whatever identifies your files
     resultingStack <- stack()
@@ -491,7 +495,7 @@ for (kk in 1:12){
     
     AOD_mean_jan <- r_AOD_2015 #r_AOD_2016,
     #plot(AOD_mean_jan)
-    names(AOD_mean_jan)<- month.name[kk]
+    names(AOD_mean_jan) <- month.name[kk]
     
     #writeRaster(AOD_mean_jan, sprintf(paste0('D:/Air Quality/GWR/new_analysis_2013_2015/MODIS/AOD_mean_%02d.tif'),kk),overwrite=TRUE)
     
@@ -503,9 +507,9 @@ for (kk in 1:12){
 
 #plot(Total_AOD$October, main=names(Total_AOD$October))
 
-writeRaster(Total_AOD, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/AOD_mean_monthly_2015.tif",overwrite=TRUE,
+writeRaster(Total_AOD, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/AOD_mean_monthly_2015.tif",overwrite=TRUE,
             options="INTERLEAVE=BAND")
-save(Total_AOD, file="D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/AOD_mean_monthly_2015.RData")
+save(Total_AOD, file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/AOD_mean_monthly_2015.RData")
 
 
 
@@ -519,13 +523,13 @@ save(Total_AOD, file="D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_dat
 
 
 
-Total_monitoring_PM25<- stack()
+Total_monitoring_PM25 <- stack()
 
 
 for (i in 1:12){
   # i=1
   
-  load("D:/Air Quality/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
+  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
   
   ## filtering the data for PM2.5 and 2015
   AQ_data_2015 <- AQ_data_12 %>%
@@ -585,26 +589,28 @@ for (i in 1:12){
   # for vallidating the coefficients
   # D:\Air Quality\GWR_with_met\Result\Images\Results of 70_30 rm RH\station for validation
   
-  if (!file.exists(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_training.RData"))){
+  if (!file.exists(paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_training.RData"))){
     # 30% training stations
     pop_station<- AQ_data_PM25 %>%
       dplyr::distinct(Site)
     
+    # THIS IS A RANDOM OPERATION!!!!!! EVERY RUN GIVE a DIFFERENT RESULT!
+    # SAVE the output as .RData
     
     training_station <- sample_n(pop_station, floor(0.7*nrow(pop_station)), replace = FALSE)
     validation_station <- subset(pop_station, !(pop_station$Site %in% training_station$Site))
-    save(training_station, file=paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_training.RData"))
-    save(validation_station, file=paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_validation.RData"))
+    save(training_station, file=paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_training.RData"))
+    save(validation_station, file=paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_validation.RData"))
   }else{
-    load(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_training.RData"))
-    load(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_validation.RData"))
+    load(paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_training.RData"))
+    load(paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/",month.name[i],"_validation.RData"))
   }
   
-  AQ_data_PM25<- AQ_data_PM25%>%
+  AQ_data_PM25<- AQ_data_PM25 %>%
     filter(Site %in% c(training_station$Site))
   
   
-  #write.csv( AQ_data_PM25, "D:/Air Quality/federico AQ index/mean_aver_jan_moni.csv",row.names=F)
+  # write.csv( AQ_data_PM25, "D:/Air Quality/federico AQ index/mean_aver_jan_moni.csv",row.names=F)
   
   
   #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -613,18 +619,18 @@ for (i in 1:12){
   
   # shapefile of UAE for the kriging
   
-  dir <- "D:/Air Quality/GWR/UAE_boundary"
+  dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
   shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
   shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
   plot(shp_UAE)
   
   ### USING THE FUNCTION kriging_func.R
-  source("D:/Air Quality/GWR/IDW_function.R")
+  source("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/IDW_function.R")
   ###    kriging_points <- function(dawit, resl_ras= 0.1, shp_UAE = "D:/Air Quality/GWR/UAE_boundary")
   
   resl_ras= 0.1
   
-  r_moni <- IDW_points(dawit=AQ_data_PM25, resl_ras, shp_UAE = "D:/Air Quality/GWR/UAE_boundary")
+  r_moni <- IDW_points(dawit=AQ_data_PM25, resl_ras, shp_UAE = "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary")
   names(r_moni)<- month.name[i]
   #plot(r_moni)
   crs(r_moni) <-"+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
@@ -634,9 +640,9 @@ for (i in 1:12){
 }
 
 
-writeRaster(Total_monitoring_PM25, "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.tif",
+writeRaster(Total_monitoring_PM25, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.tif",
             options="INTERLEAVE=BAND", overwrite=TRUE)
-save(Total_monitoring_PM25, file= "D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.RData")
+save(Total_monitoring_PM25, file= "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.RData")
 
 rm(Total_monitoring_PM25)
 
@@ -654,9 +660,9 @@ old <- Sys.time()
 
 
 
-setwd("D:/Air Quality/GWR_with_met/")
+setwd("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/")
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
 
 result_monthly<- list()
 
@@ -664,10 +670,10 @@ result_monthly<- list()
 # plot(OD_mean_jan)
 for (qq in 1:12){
   #qq=10
-  load("D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/NCMS_10km.RData")
-  load("D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.RData")
+  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/NCMS_10km.RData")
+  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.RData")
   #load("D:/Air Quality/GWR_with_met/Monitoring/Moni_PM25_mean_monthly_2015.RData")
-  load("D:/Air Quality/GWR_with_met/Result/Monthly/met_refined_data/variables/AOD_mean_monthly_2015.RData")
+  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/AOD_mean_monthly_2015.RData")
   # LU_fract_desert<- raster("Land_cover/desert_fraction.tif")#/100 ## constant for all months
   # LU_fract_urban<- raster("Land_cover/urban_fraction.tif")#/100   ## constant for all months
   # plot(Total_AOD$January)
@@ -868,8 +874,8 @@ rm(list = ls(all = TRUE))
 
 #### LOADING THE RESULT WORKSPACE
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/"
-load_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Images/"
+load_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
 
 
 loadOneName <- function(objName, file, envir = parent.frame(),
@@ -897,6 +903,7 @@ cols = c(rev(cool),  rev(warm))
 
 data_frame_r2<- data.frame()
 r2_ras_stack<- stack()
+
 for (kk in 1:12){
   #kk=1
   nam <- paste("gwrG_pnt_", month.name[kk] , sep = "")
@@ -908,7 +915,7 @@ for (kk in 1:12){
   month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
   colnames(month_ind)<-c("r2", "month_ind")
   data_frame_r2<-rbind(data_frame_r2,month_ind)
-  r2_ras_stack<- stack(r2_ras_stack,ras_r2)
+  r2_ras_stack <- stack(r2_ras_stack,ras_r2)
 }
 
 # output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
@@ -923,17 +930,17 @@ scaleFUN <- function(x) sprintf("%.1f", x)
 
 hp <- ggplot(data_frame_r2, aes(x=r2)) + 
   # qplot( data_frame_r2$r2, y=NULL, data_frame_r2, binwidth= 0.01, xlim=c(0,1), facet_wrap( ~ data_frame_r2$month_ind, ncol=3),
-  #        geom="histogram", fill=I("blue" ),alpha=I(.4),ylab ="")+
+  #        geom="histogram", fill=I("blue" ),alpha=I(.4),ylab ="") +
   geom_histogram (binwidth=0.01,fill=I("blue" ),alpha=I(.8))+ #colour="blue",
-  scale_x_continuous(limits = c(0, 1), labels= scaleFUN , name=expression(R^2))+
-  scale_y_continuous(name="Counts" )+
+  scale_x_continuous(limits = c(0, 1), labels= scaleFUN , name=expression(R^2)) +
+  scale_y_continuous(name="Counts" ) +
   ggtitle(expression(paste("Local ", R^2))) + 
   theme(plot.title = element_text(lineheight=.8, face="bold", hjust = 0.5))+
   theme(axis.text=element_text(size=10, face="bold"),
-        axis.title=element_text(size=12,face="bold"))+
+        axis.title=element_text(size=12,face="bold")) +
   facet_wrap( ~ data_frame_r2$month_ind + data_frame_r2$Month, ncol=3, labeller = labeller("label_both", .multi_line = F, sep = ": "))
 
-#hp
+hp
 
 
 png(paste0(output_folder,"histogram_r2.png"),
@@ -949,7 +956,7 @@ dev.off()
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -977,13 +984,13 @@ low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_v
 high_IQR<- if(ceiling(max_val) < ceiling(as.numeric((stat_dat[5]+IQR)))) floor(max_val) else ceiling(as.numeric((stat_dat[5]+IQR)))
 
 
-vec_all<- as.vector(r2_ras_stack)
+vec_all <- as.vector(r2_ras_stack)
 # vec_all<-vec_all[ vec_all >= low_IQR & vec_all <= high_IQR & !is.na(vec_all) ]
 
 xxx<- pretty( vec_all, n=10)
 xxx<- (c(min_val, xxx, max_val))
 
-AOD_plot <-r2_ras_stack
+AOD_plot <- r2_ras_stack
 # AOD_plot[AOD_plot < low_IQR ]<- low_IQR
 # AOD_plot[ AOD_plot >  high_IQR]<- high_IQR
 
@@ -1018,7 +1025,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 png(paste0(output_folder,"Maps_local_r2.png"),
@@ -1070,6 +1077,22 @@ for (kk in 1:12){
 data_frame_AOD<- cbind(data_frame_AOD, month.name[data_frame_AOD$month_ind])
 colnames(data_frame_AOD)[3]<- "Month"
 
+
+######################################################################
+###### seasonal averages #############################################
+
+data_frame_AOD_season <- data_frame_AOD %>%
+  group_by(month_ind) %>%
+  summarise(mean_AOD = mean(AOD_mean))
+
+DJF_mean <- colMeans(data_frame_AOD_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(data_frame_AOD_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(data_frame_AOD_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(data_frame_AOD_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
+
+
 scaleFUN <- function(x) sprintf("%.1f", x)
 
 
@@ -1078,7 +1101,7 @@ scaleFUN <- function(x) sprintf("%.1f", x)
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -1136,7 +1159,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 png(paste0(output_folder,"Coefficients_AOD.png"),
@@ -1191,12 +1214,28 @@ for (kk in 1:12){
 data_frame_WS<- cbind(data_frame_WS, month.name[data_frame_WS$month_ind])
 colnames(data_frame_WS)[3]<- "Month"
 
+
+######################################################################
+###### seasonal averages #############################################
+
+data_frame_WS_season <- data_frame_WS %>%
+  group_by(month_ind) %>%
+  summarise(mean_WS = mean(wind_speed))
+
+DJF_mean <- colMeans(data_frame_WS_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(data_frame_WS_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(data_frame_WS_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(data_frame_WS_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
+
+
 #### Ploting the WS maps
 
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -1254,7 +1293,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 png(paste0(output_folder,"Coefficients_WS.png"),
@@ -1312,12 +1351,27 @@ for (kk in 1:12){
 data_frame_RH<- cbind(data_frame_RH, month.name[data_frame_RH$month_ind])
 colnames(data_frame_RH)[3]<- "Month"
 
+######################################################################
+###### seasonal averages #############################################
+
+data_frame_RH_season <- data_frame_RH %>%
+  group_by(month_ind) %>%
+  summarise(mean_RH = mean(RH))
+
+DJF_mean <- colMeans(data_frame_RH_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(data_frame_RH_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(data_frame_RH_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(data_frame_RH_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
+
+
 #### Ploting the WS maps
 
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -1375,7 +1429,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 png(paste0(output_folder,"Coefficients_RH.png"),
@@ -1431,12 +1485,29 @@ for (kk in 1:12){
 data_frame_DEW<- cbind(data_frame_DEW, month.name[data_frame_DEW$month_ind])
 colnames(data_frame_DEW)[3]<- "Month"
 
-#### Ploting the WS maps
+
+######################################################################
+###### seasonal averages #############################################
+
+data_frame_DEW_season <- data_frame_DEW %>%
+  group_by(month_ind) %>%
+  summarise(mean_DEW = mean(DEW))
+
+DJF_mean <- colMeans(data_frame_DEW_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(data_frame_DEW_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(data_frame_DEW_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(data_frame_DEW_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
+
+
+
+#### Ploting the DEW maps
 
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -1494,7 +1565,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 png(paste0(output_folder,"Coefficients_DEW.png"),
@@ -1553,12 +1624,31 @@ for (kk in 1:12){
 data_frame_intercept<- cbind(data_frame_intercept, month.name[data_frame_intercept$month_ind])
 colnames(data_frame_intercept)[3]<- "Month"
 
+
+
+######################################################################
+###### seasonal averages #############################################
+
+data_frame_intercept_season <- data_frame_intercept %>%
+  group_by(month_ind) %>%
+  summarise(mean_intercept = mean(Intercept))
+
+DJF_mean <- colMeans(data_frame_intercept_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(data_frame_intercept_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(data_frame_intercept_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(data_frame_intercept_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
+
+
+
+
 #### Ploting the WS maps
 
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -1616,7 +1706,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 png(paste0(output_folder,"Coefficients_intercept.png"),
@@ -1662,10 +1752,10 @@ for (kk in 1:12){
   dawi<- data.frame(model_value$SDF)
   ras_r2<- rasterFromXYZ( dawi[, c("coord.x","coord.y", "pred")])
   r2_data<- dawi[, c( "pred")]
-  names(ras_r2)<- month.name[kk]
-  month_ind<- cbind(r2_data, rep (kk, length(r2_data)))
+  names(ras_r2) <- month.name[kk]
+  month_ind <- cbind(r2_data, rep (kk, length(r2_data)))
   colnames(month_ind)<-c("Predicted", "month_ind")
-  data_frame_predict<-rbind(data_frame_predict,month_ind)
+  data_frame_predict <-rbind(data_frame_predict,month_ind)
   pred_ras_stack<- stack(pred_ras_stack,ras_r2)
 }
 
@@ -1698,12 +1788,12 @@ for (kk in 1:12){
 
 
 
-#### Ploting the WS maps
+#### Ploting the PM2.5 predicted maps
 
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -1750,7 +1840,7 @@ h <- rasterVis::levelplot(AOD_plot,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title= expression(paste("     ", mu,"g ",m^-3) )
+                            title= expression(paste("         ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -1765,7 +1855,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 ### monitoring
 
@@ -1778,7 +1868,7 @@ h_moni <- rasterVis::levelplot(Moni_ras_stack,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title= expression(paste("     ", mu,"g ",m^-3) )
+                            title= expression(paste("          ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -1793,6 +1883,7 @@ h_moni <- rasterVis::levelplot(Moni_ras_stack,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(Moni_ras_stack))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
+h_moni
 
 
 
@@ -1887,14 +1978,14 @@ for (kk in 1:12){
   Moni_ras_stack<- stack(Moni_ras_stack,ras_r2)
 }
 
-BIAS<- Moni_ras_stack-pred_ras_stack
+BIAS<- Moni_ras_stack - pred_ras_stack
 
 #### Ploting the WS maps
 
 library(viridis)
 library(lattice)
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -1937,7 +2028,7 @@ h <- rasterVis::levelplot(AOD_plot,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title= expression(paste("     ", mu,"g ",m^-3) )
+                            title= expression(paste("       ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -1952,7 +2043,7 @@ h <- rasterVis::levelplot(AOD_plot,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           names.attr=rep(names(AOD_plot))) +
   latticeExtra::layer(sp.polygons(shp_UAE))
-#h
+h
 
 
 png(paste0(output_folder,"BIAS.png"),
@@ -2011,8 +2102,8 @@ rm(list = ls()[!ls() %in% c( "output_folder", "cols", "shp_UAE","loadOneName","l
 
 #### LOADING THE RESULT WORKSPACE
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/"
-load_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Images/"
+load_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
 
 
 loadOneName <- function(objName, file, envir = parent.frame(),
@@ -2027,6 +2118,7 @@ loadOneName <- function(objName, file, envir = parent.frame(),
   tempEnv[[objName]]
 }
 
+# predicted
 
 data_frame_predict<- data.frame()
 pred_ras_stack<- stack()
@@ -2043,6 +2135,9 @@ for (kk in 1:12){
   data_frame_predict<-rbind(data_frame_predict,month_ind)
   pred_ras_stack<- stack(pred_ras_stack,ras_r2)
 }
+
+data_frame_predict_mean <- data_frame_predict %>%
+  summarise(mean = mean(Predicted))
 
 #### AOD Coefficient
 
@@ -2139,6 +2234,13 @@ impact_WS<- stack( )
 impact_DEW<- stack( )
 impact_RH<- stack()
 impact_CON<- stack( )
+
+
+AOD_IMPATTO<- NULL
+WS_IMPATTO<- NULL
+DEW_IMPATTO <- NULL
+RH_IMPATTO <- NULL
+CON_IMPATTO <- NULL
  
 for( qq in 1:12){
 #qq=1
@@ -2149,41 +2251,69 @@ mydata <- loadOneName( eval(nam), file=paste0(load_folder, "Input_mydata_file.RD
 
 ### AOD impact
 AOD_impact<- cbind( mydata$x, mydata$y, (mydata$AOD_mean* na.omit(as.data.frame(AOD_ras_stack[[qq]]))))
+AOD_IMPACT<- cbind( mydata$x, mydata$y, (mydata$AOD_mean* na.omit(as.data.frame(AOD_ras_stack[[qq]]))))
 names(AOD_impact)<-  c("x", "y", "AOD_Impa")
 AOD_coeffi_val <- rasterFromXYZ(AOD_impact[, c("x", "y", "AOD_Impa")])
 names(AOD_coeffi_val)<- month.name[qq]
+
+AOD_IMPACT$ind_month <- qq
+names(AOD_IMPACT)<-  c("x", "y", "AOD_Impa", "month_ind")
+AOD_IMPATTO <- rbind(AOD_IMPATTO, AOD_IMPACT)
 #plot(AOD_coeffi_val)
 
-### WS impact
 
+
+### WS impact
 WS_impact<- cbind( mydata$x, mydata$y, (mydata$wind_speed* na.omit(as.data.frame(WS_ras_stack[[qq]]))))
+WS_IMPACT<- cbind( mydata$x, mydata$y, (mydata$wind_speed* na.omit(as.data.frame(WS_ras_stack[[qq]]))))
 names(WS_impact)<-  c("x", "y", "WS")
 WS_coeffi_val <- rasterFromXYZ(WS_impact[, c("x", "y", "WS")])
 names(WS_coeffi_val)<- month.name[qq]
+
+WS_IMPACT$ind_month <- qq
+names(WS_IMPACT)<-  c("x", "y", "WS_Impa", "month_ind")
+WS_IMPATTO <- rbind(WS_IMPATTO, WS_IMPACT)
 #plot(WS_coeffi_val)
 
-### DEW impact
 
+### DEW impact
 DEW_impact<- cbind( mydata$x, mydata$y, (mydata$DEW * na.omit(as.data.frame(DEW_ras_stack[[qq]]))))
+DEW_IMPACT<- cbind( mydata$x, mydata$y, (mydata$DEW* na.omit(as.data.frame(DEW_ras_stack[[qq]]))))
 names(DEW_impact)<-  c("x", "y", "DEW")
 DEW_coeffi_val <- rasterFromXYZ(DEW_impact[, c("x", "y", "DEW")])
 names(DEW_coeffi_val)<- month.name[qq]
+
+DEW_IMPACT$ind_month <- qq
+names(DEW_IMPACT)<-  c("x", "y", "DEW_Impa", "month_ind")
+DEW_IMPATTO <- rbind(DEW_IMPATTO, DEW_IMPACT)
 #plot(DEW_coeffi_val)
 
-### RH impact
 
+
+### RH impact
 RH_impact<- cbind( mydata$x, mydata$y, (mydata$RH * na.omit(as.data.frame(RH_ras_stack[[qq]]))))
+RH_IMPACT<- cbind( mydata$x, mydata$y, (mydata$RH* na.omit(as.data.frame(RH_ras_stack[[qq]]))))
 names(RH_impact)<-  c("x", "y", "RH")
 RH_coeffi_val <- rasterFromXYZ(RH_impact[, c("x", "y", "RH")])
 names(RH_coeffi_val)<- month.name[qq]
+
+RH_IMPACT$ind_month <- qq
+names(RH_IMPACT)<-  c("x", "y", "RH_Impa", "month_ind")
+RH_IMPATTO <- rbind(RH_IMPATTO, RH_IMPACT)
 #plot(RH_coeffi_val)
+
 
 ### Constant impact
 
 CON_impact<- cbind( mydata$x, mydata$y, (na.omit(as.data.frame(Intercept_ras_stack[[qq]]))))
+CON_IMPACT<- cbind( mydata$x, mydata$y, (na.omit(as.data.frame(Intercept_ras_stack[[qq]]))))
 names(CON_impact)<-  c("x", "y", "CON")
 CON_coeffi_val <- rasterFromXYZ(CON_impact[, c("x", "y", "CON")])
 names(CON_coeffi_val)<- month.name[qq]
+
+CON_IMPACT$ind_month <- qq
+names(CON_IMPACT)<-  c("x", "y", "CON_Impa", "month_ind")
+CON_IMPATTO <- rbind(CON_IMPATTO, CON_IMPACT)
 #plot(CON_coeffi_val)
 
 
@@ -2193,6 +2323,83 @@ impact_DEW<- stack(impact_DEW, DEW_coeffi_val )
 impact_RH<- stack(impact_RH, RH_coeffi_val )
 impact_CON<- stack(impact_CON, CON_coeffi_val )
 }
+
+
+
+######################################################################
+###### seasonal averages #############################################
+
+AOD_IMPATTO_season <- AOD_IMPATTO %>%
+  group_by(month_ind) %>%
+  summarise(mean_AOD = mean(AOD_Impa))
+
+DJF_mean <- colMeans(AOD_IMPATTO_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(AOD_IMPATTO_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(AOD_IMPATTO_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(AOD_IMPATTO_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
+
+
+
+######################################################################
+###### seasonal averages #############################################
+
+WS_IMPATTO_season <- WS_IMPATTO %>%
+  group_by(month_ind) %>%
+  summarise(mean_WS = mean(WS_Impa))
+
+DJF_mean <- colMeans(WS_IMPATTO_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(WS_IMPATTO_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(WS_IMPATTO_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(WS_IMPATTO_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
+
+
+######################################################################
+###### seasonal averages #############################################
+
+DEW_IMPATTO_season <- DEW_IMPATTO %>%
+  group_by(month_ind) %>%
+  summarise(mean_DEW = mean(DEW_Impa))
+
+DJF_mean <- colMeans(DEW_IMPATTO_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(DEW_IMPATTO_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(DEW_IMPATTO_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(DEW_IMPATTO_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
+
+
+######################################################################
+###### seasonal averages #############################################
+
+RH_IMPATTO_season <- RH_IMPATTO %>%
+  group_by(month_ind) %>%
+  summarise(mean_RH = mean(RH_Impa))
+
+DJF_mean <- colMeans(RH_IMPATTO_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(RH_IMPATTO_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(RH_IMPATTO_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(RH_IMPATTO_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
+
+
+######################################################################
+###### seasonal averages #############################################
+
+CON_IMPATTO_season <- CON_IMPATTO %>%
+  group_by(month_ind) %>%
+  summarise(mean_CON = mean(CON_Impa))
+
+DJF_mean <- colMeans(CON_IMPATTO_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(CON_IMPATTO_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(CON_IMPATTO_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(CON_IMPATTO_season[c(9, 10, 11), 2])
+######################################################################
+###### seasonal averages #############################################
 
 
 
@@ -2225,7 +2432,6 @@ vec_CON<-  vec_majority(impact_CON)
 ####### plots of the IMPACT of the Coefficients
 
 
-
 h <- rasterVis::levelplot(vec_AOD, 
                           margin=FALSE, main= "AOD Impact" ,
                           ## about colorbar
@@ -2235,7 +2441,7 @@ h <- rasterVis::levelplot(vec_AOD,
                                          font=3),
                             axis.line=list(col='black'),
                             width=0.75,
-                            title= expression(paste("      ", mu,"g ",m^-3) )
+                            title= expression(paste("         ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
                           par.settings=list(
@@ -2251,6 +2457,7 @@ h <- rasterVis::levelplot(vec_AOD,
                           #names.attr=rep(names(AOD_plot))
                           ) +
   latticeExtra::layer(sp.polygons(shp_UAE))
+h
 
 png(paste0(output_folder,"AOD_impact.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
@@ -2258,19 +2465,20 @@ png(paste0(output_folder,"AOD_impact.png"),
 print(h)
 dev.off()
 
+
 ####### WS
-
-
 
 h <- rasterVis::levelplot(vec_WS, 
                           margin=FALSE, main= "WS Impact" ,
+                          xlab = "",
+                          ylab = "",
                           ## about colorbar
                           colorkey=list(
                             space='right',                   
                             labels= list(at= floor(as.numeric( seq(minValue(vec_WS), maxValue(vec_WS), length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=1.5,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2287,6 +2495,7 @@ h <- rasterVis::levelplot(vec_WS,
                           #names.attr=rep(names(AOD_plot))
 ) +
   latticeExtra::layer(sp.polygons(shp_UAE))
+h
 
 png(paste0(output_folder,"WS_impact.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
@@ -2324,6 +2533,7 @@ h <- rasterVis::levelplot(vec_DEW,
                           #names.attr=rep(names(AOD_plot))
 ) +
   latticeExtra::layer(sp.polygons(shp_UAE))
+h
 
 png(paste0(output_folder,"DEW_impact.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
@@ -2361,6 +2571,7 @@ h <- rasterVis::levelplot(vec_RH,
                           #names.attr=rep(names(AOD_plot))
 ) +
   latticeExtra::layer(sp.polygons(shp_UAE))
+h
 
 png(paste0(output_folder,"RH_impact.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
@@ -2398,6 +2609,7 @@ h <- rasterVis::levelplot(vec_CON,
                           #names.attr=rep(names(AOD_plot))
 ) +
   latticeExtra::layer(sp.polygons(shp_UAE))
+h
 
 png(paste0(output_folder,"CON_impact.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
@@ -2421,8 +2633,8 @@ plot( mean(impact_CON))
 
 ###### SEASONAL ANALYSIS #####
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/"
-load_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Images/"
+load_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
 
 
 loadOneName <- function(objName, file, envir = parent.frame(),
@@ -2615,7 +2827,7 @@ warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green
 #middle = rainbow(215, start=rgb2hsv(col2rgb('#FF8600FF'))[1], end=rgb2hsv(col2rgb('green'))[1])
 cols = c(rev(cool),  rev(warm))
 
-dir <- "D:/Air Quality/GWR/UAE_boundary"
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
 shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
 plot(shp_UAE)
@@ -2636,7 +2848,7 @@ h <- rasterVis::levelplot(pre_mam,
                             labels= list(at= floor(as.numeric( seq_lab)),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=1.5,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2652,6 +2864,7 @@ h <- rasterVis::levelplot(pre_mam,
                           # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
                           #names.attr=rep(names(AOD_plot))
   latticeExtra::layer(sp.polygons(shp_UAE))
+h
 
 png(paste0(output_folder,"Seasonal_map_mam.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
@@ -2676,8 +2889,9 @@ h <- rasterVis::levelplot(pre_jja,
                             space='right',                   
                             labels= list(at= floor(as.numeric( seq_lab)),
                                          font=3),
+                            cexRow=0.3, cexCol=0.3,
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=1.5,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2693,6 +2907,7 @@ h <- rasterVis::levelplot(pre_jja,
   # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
   #names.attr=rep(names(AOD_plot))
   latticeExtra::layer(sp.polygons(shp_UAE))
+h
 
 png(paste0(output_folder,"Seasonal_map_jja.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
@@ -2718,7 +2933,7 @@ h <- rasterVis::levelplot(pre_son,
                             labels= list(at= floor(as.numeric( seq_lab)),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=1.5,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2734,6 +2949,7 @@ h <- rasterVis::levelplot(pre_son,
   # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
   #names.attr=rep(names(AOD_plot))
   latticeExtra::layer(sp.polygons(shp_UAE))
+h
 
 png(paste0(output_folder,"Seasonal_map_son.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
@@ -2759,7 +2975,7 @@ h <- rasterVis::levelplot(pre_djf,
                             labels= list(at= floor(as.numeric( seq_lab)),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width= 1.5,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2775,6 +2991,7 @@ h <- rasterVis::levelplot(pre_djf,
   # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
   #names.attr=rep(names(AOD_plot))
   latticeExtra::layer(sp.polygons(shp_UAE))
+h
 
 png(paste0(output_folder,"Seasonal_map_djf.png"),
     width = 1680, height = 1050, units = "px", pointsize = 30,
@@ -2802,8 +3019,8 @@ rm(list = ls(all = TRUE))
 
 #### LOADING THE RESULT WORKSPACE
 
-output_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Images/"
-load_folder<- "D:/Air Quality/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
+output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Images/"
+load_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
 
 
 loadOneName <- function(objName, file, envir = parent.frame(),
@@ -2933,15 +3150,15 @@ for (kk in 1:12){
 #### monthly loop 
 
 # output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
-All_extracted_data_tr<- NULL
-All_extracted_data_val<- NULL
+All_extracted_data_tr <- NULL
+All_extracted_data_val <- NULL
 
 for (qq in 1:12){
 #qq=1
 
-load(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_validation.RData"))
-load(paste0("D:/Air Quality/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_training.RData"))   
-load( file="D:/Air Quality/GWR_with_met/Stations_for_validation/All_stations.RData")
+load(paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_validation.RData"))
+load(paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_training.RData"))   
+load( file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Stations_for_validation/All_stations.RData")
 
 ### functions needed for the extraction 
 extra_dataframe <- function(x=x, y=y, mydata=mydata, lon_lat= c("x", "y")){
@@ -2963,7 +3180,7 @@ extra_dataframe <- function(x=x, y=y, mydata=mydata, lon_lat= c("x", "y")){
   return(all_point)
 }
 
-source("D:/Air Quality/GWR/new_analysis_2013_2015/Validation_2016/extract_pnt_raster.r")
+source("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/Validation_2016/extract_pnt_raster.r")
 
 # Latitude Longitude should be the lat and long of the files
 
@@ -2998,7 +3215,7 @@ names(moni_real_estimate_tr)<- c("Monitoring", "Estimate", "Month")
 ###### adding the all stations lat and long information to the training stations
 
 {
-  load("D:/Air Quality/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
+  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
   
   ## filtering the data for PM2.5 and 2015
   AQ_data_2015 <- AQ_data_12 %>%
@@ -3125,8 +3342,8 @@ rm(list = ls()[!ls() %in% c( "All_extracted_data_tr","All_extracted_data_val", "
 # 
 # r_2_tr<-  rsq(All_extracted_data_tr$Monitoring, All_extracted_data_tr$Estimate)
 
-r_2_tr<-   sum((All_extracted_data_tr$Estimate-mean(All_extracted_data_tr$Monitoring) )^2)/
-   sum((All_extracted_data_tr$Monitoring-mean(All_extracted_data_tr$Monitoring))^2)
+r_2_tr <-   sum((All_extracted_data_tr$Estimate - mean(All_extracted_data_tr$Monitoring) )^2)/
+   sum((All_extracted_data_tr$Monitoring - mean(All_extracted_data_tr$Monitoring))^2)
 
 #### r 2 for the validation
 dawit<- All_extracted_data_val%>%
@@ -3214,9 +3431,9 @@ png(paste0(output_folder,"R2_train_month.png"), width = 1680, height = 1050, uni
 par(mar=c(4,4.5,2,1))
 print({
   sp <- ggplot(All_extracted_data_tr, aes(x=Monitoring, y=Estimate )) + geom_point(shape=3, col="blue")+
-    xlim(0,100)+ ylim(0,100)+
+    xlim(0,150)+ ylim(0,150)+
     geom_abline(mapping = NULL, data = NULL,  slope=1, intercept=0,
-                na.rm = FALSE, show.legend = NA,size = 1)+
+                na.rm = FALSE, show.legend = NA,size = 0.5)+
     facet_wrap(~ Month, ncol=3, labeller = )
   sp
   
@@ -3230,9 +3447,9 @@ png(paste0(output_folder,"R2_val_month.png"), width = 1680, height = 1050, units
 par(mar=c(4,4.5,2,1))
 print({
   sp <- ggplot(All_extracted_data_val, aes(x=Monitoring, y=Estimate )) + geom_point(shape=3, col="blue")+
-    xlim(0,100)+ ylim(0,100)+
+    xlim(0,150)+ ylim(0,150)+
     geom_abline(mapping = NULL, data = NULL,  slope=1, intercept=0,
-                na.rm = FALSE, show.legend = NA,size = 1)+
+                na.rm = FALSE, show.legend = NA,size = 0.5)+
     facet_wrap(~ Month, ncol=3, labeller = )
   sp
   
@@ -3241,14 +3458,6 @@ print({
 dev.off()
 
 
-
-
-# to make a movie.......
-# to use with ImageMagik using the commnad line cmd in windows
-# cd into the directory where there are the png files
-# magick -delay 50 -loop 0 *.png Dry_Temperatue_NCMS_1km_DUST_event_02_April_2015.gif
-# magick -delay 50 -loop 0 *.png Irradiance_NCMS_1km_DUST_event_02_April_2015.gif
-# magick -delay 50 -loop 0 *.png Wind_Speed_NCMS_1km_DUST_event_02_April_2015.gif
 
 
 
