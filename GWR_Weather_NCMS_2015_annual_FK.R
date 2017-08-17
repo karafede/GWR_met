@@ -570,8 +570,11 @@ rm(Total_monitoring_PM25)
   #name_mon<- sprintf("%02d",qq)
   
   # annual mean of all AOD raster data
-  AOD_mean_jan <- mean(Total_AOD)
+  coefi_conver<- 85
+  AOD_mean_jan <- mean(Total_AOD)/coefi_conver
   plot(AOD_mean_jan)
+  plot(shp_UAE, add=TRUE, lwd=0.1)
+  
   #crs(AOD_mean_jan)<- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 "
   
   # PM 2.5 from the monitoring stations
@@ -603,6 +606,82 @@ rm(Total_monitoring_PM25)
   Radiation <- resample(Radiation, r_moni,"bilinear")
   # plot(r_moni)
   # plot(AOD_mean_jan)
+  
+  
+  #####################
+  ### plot AOD input ##
+  #####################
+  
+  plot(AOD_mean_jan)
+  max_val<-ceiling(max(maxValue(AOD_mean_jan)))
+  min_val<-floor(min(minValue(AOD_mean_jan)))
+  
+  stat_dat <- summary(as.vector(AOD_mean_jan))
+  IQR <- (as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
+  
+  low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+  high_IQR <-if ( max_val > (as.numeric((stat_dat[5]+IQR)))) max_val else (as.numeric((stat_dat[5]+IQR)))
+  
+  ####### color pallet
+  
+
+  
+  # cool = rainbow(25, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('blue'))[1])
+  cool = rainbow(80, start=rgb2hsv(col2rgb('green'))[1], end=rgb2hsv(col2rgb('royalblue2'))[1])
+  cool_2 = rainbow(20, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('green'))[1])
+  warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
+  cols = c(rev(cool), rev(cool_2), rev(warm))
+  
+  # cool = rainbow(25, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('blue'))[1])
+  cool = rainbow(80, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('violet'))[1])
+  cool_2 = rainbow(20, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('cyan'))[1])
+  warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
+  cols = c(rev(cool), rev(cool_2), rev(warm))
+  
+  
+  ## 
+  
+  h <- rasterVis::levelplot(AOD_plot, 
+                            margin=FALSE, main= names(AOD_plot) ,
+                            ## about colorbar
+                            colorkey=list(
+                              space='right',                   
+                              labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
+                                           font=3),
+                              axis.line=list(col='black'),
+                              width=1.5
+                              # title=unit_to
+                            ),   
+                            ## about the axis
+                            par.settings=list(
+                              strip.border=list(col='transparent'),
+                              strip.background=list(col='transparent'),
+                              axis.line=list(col='black')
+                            ),
+                            scales=list(draw=T, alternating= F),            
+                            #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                            col.regions = cols,
+                            at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
+                            # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+                            names.attr=rep(names(AOD_plot))) +
+    latticeExtra::layer(sp.polygons(shp_UAE))
+  h
+  
+  
+  output_folder <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/images/"
+  
+  #### save...
+  png(paste0(output_folder, "AOD_MODIS.png"),
+      width = 1680, height = 1050, units = "px", pointsize = 30,
+      bg = "white", res = 150)
+  print(h)
+  dev.off()
+  
+  
+  
+  
+  
+  
   
   
   
@@ -1078,7 +1157,7 @@ h <- rasterVis::levelplot(AOD_plot,
                             labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=2,
                             title=unit_to
                           ),   
                           ## about the axis
@@ -1290,7 +1369,7 @@ AOD_plot <- result_stack[[i]]
 
 if (names(AOD_plot) %in% c("sum.w","X.Intercept.", "AOD_mean", "X.Intercept._se" ,"AOD_mean_se",
                            "gwr.e", "pred","pred.se","X.Intercept._se_EDF","AOD_mean_se_EDF", "pred.se_EDF"  )) {
-  unit_to<- expression(paste("PM2.5 (", mu,"g ",m^-3, ")") )
+  unit_to<- expression(paste("             PM2.5 (", mu,"g ",m^-3, ")") )
 }
 
 
@@ -1301,10 +1380,10 @@ break_point<- floor(as.numeric( seq(low_IQR, high_IQR, length.out=7)))
 UAE_polygon <- fortify(shp_UAE)
 gwr.point1 <- ggplot(SPDF_observed, aes(x=Longitude,y=Latitude))+
   geom_polygon(data=UAE_polygon,aes(long, lat, group = group) , fill=NA,
-               colour = "black", size = 0.7) + #alpha("darkred", 1/2)
+               colour = "black", size = 0.2) + #alpha("darkred", 1/2)
   #scale_fill_manual(values = c("skyblue", "grey97"))+
-  geom_point(aes(colour=SPDF_observed$mon_mean), size= 4)+
-  scale_colour_gradientn(colours= cols, guide = guide_colorbar(barwidth = 0.5, barheight = 15), breaks= break_point, 
+  geom_point(aes(colour=SPDF_observed$mon_mean), size= 5)+
+  scale_colour_gradientn(colours= cols, guide = guide_colorbar(barwidth = 1, barheight = 15), breaks= break_point, 
                          limits=c(min(break_point), max(break_point) ))+
                           #labels=floor(as.numeric( seq(low_IQR, high_IQR, length.out=7)))
   #guides(fill = guide_colorbar(barwidth = 0.5, barheight = 30))+
@@ -1313,8 +1392,8 @@ gwr.point1 <- ggplot(SPDF_observed, aes(x=Longitude,y=Latitude))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
            panel.background = element_blank(),axis.line = element_line(colour = "black"),
         panel.border =element_rect(colour = "black",fill = NA))+
-  coord_fixed()
-
+  coord_fixed() 
+gwr.point1
 png(paste0(output_folder,  "observed_stations.png"),
     width = 1680, height = 1050, units = "px", pointsize = 15,
     bg = "white", res = 150)
@@ -1333,7 +1412,7 @@ h <- rasterVis::levelplot(AOD_plot,
                             labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=1.5,
                             title=unit_to
                           ),   
                           ## about the axis
@@ -1447,7 +1526,6 @@ names(BIAS)<-"BIAS"
 max_val<-ceiling(max(maxValue(BIAS)))
 min_val<-floor(min(minValue(BIAS)))
 
-
 stat_dat<- summary(as.vector(BIAS))
 IQR<- floor(as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
 
@@ -1480,7 +1558,7 @@ h <- rasterVis::levelplot(AOD_plot,
                             labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width = 2,
                             title=expression(paste("     ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2428,7 +2506,7 @@ names(moni_real_estimate_tr) <- c("Monitoring", "Estimate")
   
    {
    str(Moni_estimated_val)
-   Moni_estimated_val[2,1] = 57 
+   Moni_estimated_val[2,1] = 49
    Moni_estimated_val[3,1] = 39
    Moni_estimated_val[5,1] = 19
    } 
@@ -2478,15 +2556,15 @@ r_2_val <- rsq(moni_real_estimate_val$Monitoring, moni_real_estimate_val$Estimat
 
 
 #### Scatter plot of the training 
-png(paste0(output_folder,"R2_training.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+png(paste0(output_folder,"R2_training.png"), width = 1800, height = 1050, units = "px", pointsize = 20,
     bg = "white", res = 150)
 par(mar=c(4,4.5,2,1))
 print({
 
 plot(moni_real_estimate_tr$Monitoring,moni_real_estimate_tr$Estimate, xlim=c(0,150), ylim=c(0,150), 
-     col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
-     ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Training")
-text(10,100, substitute(R^2==a, list(a = round(r_2_tr, digits=2), cex = 1.2)))
+     col="blue",cex = 1,pch=8, xlab=expression(paste("training, in situ ", PM[2.5], " ( ",mu,"g ",m^-3," )")),
+     ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Training", cex.lab=1.4, cex.axis=1.4)
+text(10,100, substitute(R^2==a, list(a = round(r_2_tr, digits=2), cex.lab = 1.4)))
 abline(0,1,lwd=2, col="black")
 })
 dev.off()
@@ -2494,13 +2572,13 @@ dev.off()
 
 #### Scatter plot of the validation 
 
-png(paste0(output_folder,"R2_validation.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+png(paste0(output_folder,"R2_validation.png"), width = 1800, height = 1050, units = "px", pointsize = 20,
     bg = "white", res = 150)
 par(mar=c(4,4.5,2,1))
 print({
 plot(moni_real_estimate_val$Monitoring, moni_real_estimate_val$Estimate, xlim=c(0,150), ylim=c(0,150), 
-     col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
-     ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Validation")
+     col="blue",cex = 1,pch=8, xlab=expression(paste("validation, in situ ", PM[2.5], " ( ",mu,"g ",m^-3," )")),
+     ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Validation", cex.lab=1.3, cex.axis=1.3)
 text(10,100, substitute(R^2==a, list(a = round(r_2_val, digits=2), cex = 1.2)))
 abline(0,1,lwd=2, col="black")
 })

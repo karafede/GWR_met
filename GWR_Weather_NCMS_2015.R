@@ -1759,6 +1759,26 @@ for (kk in 1:12){
   pred_ras_stack<- stack(pred_ras_stack,ras_r2)
 }
 
+
+###############################################
+# make seasonal averages pf predicted PM2.5 ###
+###############################################
+
+
+
+data_frame_predict_season <- data_frame_predict %>%
+  group_by(month_ind) %>%
+  summarise(mean_predicted = mean(Predicted))
+
+DJF_mean <- colMeans(data_frame_predict_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(data_frame_predict_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(data_frame_predict_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(data_frame_predict_season[c(9, 10, 11), 2])
+
+###############################################
+###############################################
+
+
 # output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
 
 
@@ -2402,6 +2422,11 @@ SON_mean <- colMeans(CON_IMPATTO_season[c(9, 10, 11), 2])
 ###### seasonal averages #############################################
 
 
+cool = rainbow(100, start=rgb2hsv(col2rgb('green'))[1], end=rgb2hsv(col2rgb('blue'))[1])
+warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green'))[1])
+#middle = rainbow(215, start=rgb2hsv(col2rgb('#FF8600FF'))[1], end=rgb2hsv(col2rgb('green'))[1])
+cols = c(rev(cool),  rev(warm))
+
 
 vec_majority<- function(impact_AOD=impact_AOD , IQRD=4){
   
@@ -2440,7 +2465,7 @@ h <- rasterVis::levelplot(vec_AOD,
                             labels= list(at= floor(as.numeric( seq(minValue(vec_AOD), maxValue(vec_AOD), length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=2,
                             title= expression(paste("         ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2478,7 +2503,7 @@ h <- rasterVis::levelplot(vec_WS,
                             labels= list(at= floor(as.numeric( seq(minValue(vec_WS), maxValue(vec_WS), length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=1.5,
+                            width=2,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2630,8 +2655,10 @@ plot( mean(impact_CON))
 
 #####
 
-
-###### SEASONAL ANALYSIS #####
+###################################
+###### SEASONAL ANALYSIS ##########
+###################################
+###################################
 
 output_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Images/"
 load_folder<- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Model_GWR_data/"
@@ -2709,9 +2736,9 @@ par(mar=c(4,4.5,2,1), pty="s")
 print({
   
   plot(values(moni_mam), values(pre_mam), xlim=c(5,80), ylim=c(5,80), 
-       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
-       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "March-May")
-  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 1.2)))
+       col="blue",cex = 1,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "March-May", cex.lab=1.7, cex.axis=1.7)
+  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex.lab = 2)))
   abline(0,1,lwd=2, col="black")
   
 })
@@ -2744,9 +2771,9 @@ par(mar=c(4,4.5,2,1), pty="s")
 print({
   
   plot(values(moni_jja), values(pre_jja), xlim=c(5,80), ylim=c(5,80), 
-       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
-       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "June-August")
-  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 1.2)))
+       col="blue",cex = 1,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "June-August", cex.lab=1.7, cex.axis=1.7)
+  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 2)))
   abline(0,1,lwd=2, col="black")
   
 })
@@ -2774,9 +2801,9 @@ par(mar=c(4,4.5,2,1), pty="s")
 print({
   
   plot(values(moni_son), values(pre_son), xlim=c(5,80), ylim=c(5,80), 
-       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
-       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "September - November")
-  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 1.2)))
+       col="blue",cex = 1,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "September - November", cex.lab=1.7, cex.axis=1.7)
+  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 2)))
   abline(0,1,lwd=2, col="black")
   
 })
@@ -2805,9 +2832,9 @@ par(mar=c(4,4.5,2,1), pty="s")
 print({
   
   plot(values(moni_djf), values(pre_djf), xlim=c(5,80), ylim=c(5,80), 
-       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
-       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "December - February")
-  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 1.2)))
+       col="blue",cex = 1,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "December - February", cex.lab=1.7, cex.axis=1.7)
+  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 2)))
   abline(0,1,lwd=2, col="black")
   
 })
@@ -2848,7 +2875,7 @@ h <- rasterVis::levelplot(pre_mam,
                             labels= list(at= floor(as.numeric( seq_lab)),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=1.5,
+                            width=2,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2891,7 +2918,7 @@ h <- rasterVis::levelplot(pre_jja,
                                          font=3),
                             cexRow=0.3, cexCol=0.3,
                             axis.line=list(col='black'),
-                            width=1.5,
+                            width=2,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2933,7 +2960,7 @@ h <- rasterVis::levelplot(pre_son,
                             labels= list(at= floor(as.numeric( seq_lab)),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=1.5,
+                            width=2,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2975,7 +3002,7 @@ h <- rasterVis::levelplot(pre_djf,
                             labels= list(at= floor(as.numeric( seq_lab)),
                                          font=3),
                             axis.line=list(col='black'),
-                            width= 1.5,
+                            width= 2,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -3310,6 +3337,19 @@ rm(list = ls()[!ls() %in% c( "All_extracted_data_tr","All_extracted_data_val", "
                              "loadOneName", "output_folder", "load_folder")])
 }
 
+
+###############################################################
+# calculate monthly average for the traing monitoring data ####
+All_extracted_data_tr$month_ind <- as.numeric(All_extracted_data_tr$Month)
+
+All_extracted_data_tr_season <- All_extracted_data_tr %>%
+  group_by(month_ind) %>%
+  summarise(mean_MONI = mean(Monitoring))
+
+DJF_mean <- colMeans(All_extracted_data_tr_season[c(12, 1, 2), 2])
+MAM_mean <- colMeans(All_extracted_data_tr_season[c(3, 4, 5), 2])
+JJA_mean <- colMeans(All_extracted_data_tr_season[c(6, 7, 8), 2])
+SON_mean <- colMeans(All_extracted_data_tr_season[c(9, 10, 11), 2])
 
 
 
