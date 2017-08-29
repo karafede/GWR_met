@@ -174,6 +174,14 @@ All_AWS_data_1 <- All_AWS_data %>%
   left_join(STATIONS_COORDS, by = c("station"))
 
 
+# select unique site
+met_stations_unique <- All_AWS_data_1[!duplicated(All_AWS_data_1[c("station" )]),]
+met_stations_unique <- na.omit(met_stations_unique)
+met_stations_unique <- met_stations_unique %>%
+  dplyr::select(station,
+         latitude,
+         longitude)
+write.csv(met_stations_unique, "met_stations_unique.csv")
 
 
 ######################################################################################
@@ -396,6 +404,7 @@ save(Total_AOD, file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met
 
 
 
+
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 ##########   Getting the monthly monitoring values           ########
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -468,6 +477,7 @@ AQ_data_PM25 <- AQ_data_PM25 %>%
 AQ_data_PM25 <- na.omit(AQ_data_PM25)
 
 
+write.csv(AQ_data_PM25, "PM25_sites.csv")
 
 # selecting 70% of the monitoring stations for the training and the rest 30% 
 # for validating the coefficients
@@ -571,7 +581,7 @@ rm(Total_monitoring_PM25)
   
   # annual mean of all AOD raster data
   coefi_conver<- 85
-  AOD_mean_jan <- mean(Total_AOD)/coefi_conver
+  AOD_mean_jan <- mean(Total_AOD)/coefi_conver   # make ANNUAL mean with all monthly data
   plot(AOD_mean_jan)
   plot(shp_UAE, add=TRUE, lwd=0.1)
   
@@ -608,82 +618,8 @@ rm(Total_monitoring_PM25)
   # plot(AOD_mean_jan)
   
   
-  #####################
-  ### plot AOD input ##
-  #####################
-  
-  plot(AOD_mean_jan)
-  max_val<-ceiling(max(maxValue(AOD_mean_jan)))
-  min_val<-floor(min(minValue(AOD_mean_jan)))
-  
-  stat_dat <- summary(as.vector(AOD_mean_jan))
-  IQR <- (as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR
-  
-  low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
-  high_IQR <-if ( max_val > (as.numeric((stat_dat[5]+IQR)))) max_val else (as.numeric((stat_dat[5]+IQR)))
-  
-  ####### color pallet
-  
 
-  
-  # cool = rainbow(25, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('blue'))[1])
-  cool = rainbow(80, start=rgb2hsv(col2rgb('green'))[1], end=rgb2hsv(col2rgb('royalblue2'))[1])
-  cool_2 = rainbow(20, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('green'))[1])
-  warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
-  cols = c(rev(cool), rev(cool_2), rev(warm))
-  
-  # cool = rainbow(25, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('blue'))[1])
-  cool = rainbow(80, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('violet'))[1])
-  cool_2 = rainbow(20, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('cyan'))[1])
-  warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
-  cols = c(rev(cool), rev(cool_2), rev(warm))
-  
-  
-  ## 
-  
-  h <- rasterVis::levelplot(AOD_plot, 
-                            margin=FALSE, main= names(AOD_plot) ,
-                            ## about colorbar
-                            colorkey=list(
-                              space='right',                   
-                              labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
-                                           font=3),
-                              axis.line=list(col='black'),
-                              width=1.5
-                              # title=unit_to
-                            ),   
-                            ## about the axis
-                            par.settings=list(
-                              strip.border=list(col='transparent'),
-                              strip.background=list(col='transparent'),
-                              axis.line=list(col='black')
-                            ),
-                            scales=list(draw=T, alternating= F),            
-                            #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
-                            col.regions = cols,
-                            at=unique(c(seq(low_IQR, high_IQR, length.out=200))),
-                            # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
-                            names.attr=rep(names(AOD_plot))) +
-    latticeExtra::layer(sp.polygons(shp_UAE))
-  h
-  
-  
-  output_folder <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/images/"
-  
-  #### save...
-  png(paste0(output_folder, "AOD_MODIS.png"),
-      width = 1680, height = 1050, units = "px", pointsize = 30,
-      bg = "white", res = 150)
-  print(h)
-  dev.off()
-  
-  
-  
-  
-  
-  
-  
-  
+
   
   #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   ####  as dataframe with points layers Method I      ####
@@ -729,9 +665,10 @@ rm(Total_monitoring_PM25)
   mydata<- na.omit(mydata)
   
   # we treat AOD without any converison factor
-  mydata$AOD_mean <- mydata$AOD_mean/85
+  mydata$AOD_mean <- mydata$AOD_mean
   mydata$RH <- mydata$RH
   
+  write.csv(mydata, "PM25_MET_data_kriged.csv")
   save( mydata, file=paste0( output_folder, "model_input_file.RData") )
   
   library(spgwr)
@@ -1083,6 +1020,11 @@ warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green
 #middle = rainbow(215, start=rgb2hsv(col2rgb('#FF8600FF'))[1], end=rgb2hsv(col2rgb('green'))[1])
 cols = c(rev(cool),  rev(warm))
 
+cool = rainbow(50, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('royalblue2'))[1])
+cool_2 = rainbow(25, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('cyan'))[1])
+warm = rainbow(125, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
+cols = c(rev(cool), rev(cool_2), rev(warm))
+
 
 data_frame_SDF <- data.frame(model_value$SDF)
 
@@ -1399,6 +1341,73 @@ png(paste0(output_folder,  "observed_stations.png"),
     bg = "white", res = 150)
 print(gwr.point1)
 dev.off()
+
+
+
+
+########################################################
+# leaflet map for the observed data ####################
+########################################################
+########################################################
+
+
+library(leaflet)
+library(htmlwidgets)
+library(webshot)
+
+MIN <- (min(SPDF_observed$mon_mean))
+MAX <- (max(SPDF_observed$mon_mean))
+
+####### color pallet
+
+cool = rainbow(130, start=rgb2hsv(col2rgb('green'))[1], end=rgb2hsv(col2rgb('blue'))[1])
+warm = rainbow(70, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green'))[1])
+cols = c(rev(cool),  rev(warm))
+
+
+cool = rainbow(50, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('royalblue2'))[1])
+cool_2 = rainbow(25, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('cyan'))[1])
+warm = rainbow(125, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
+cols = c(rev(cool), rev(cool_2), rev(warm))
+
+# define color palette for the variable
+pal_variable <- colorNumeric(
+  palette =     cols,
+  c(MIN, MAX)
+)
+
+
+  map <- leaflet(shp_UAE) %>%
+  addTiles() %>%
+   addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+  #  addProviderTiles("Hydda.Full", group = "") %>%
+   addCircleMarkers(
+    lng = SPDF_observed$Longitude, lat = SPDF_observed$Latitude,
+   # popup = popup_variable,
+    weight = 2, radius = 7,
+    color = pal_variable(SPDF_observed[["mon_mean"]]), stroke = FALSE, fillOpacity = 1,
+    group = "AAA"
+  ) %>%
+  addPolygons(stroke = TRUE, smoothFactor = 1, fillOpacity = 0,
+              weight = 1, color = "#000000",
+              group = "ME") %>%
+  addLegend(
+    "bottomright", pal = pal_variable, values = c(MIN, MAX),
+    title = paste(
+      "<strong>Annual Mean<br>"),
+    labFormat = labelFormat(prefix = ""), labels = "black",
+    opacity = 1
+  ) 
+map
+
+## create a .png figure for the pollutant and an ineractive html file
+saveWidget(map, "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Annual/ALL_variables/station for validation/data_output/Model GWR/images/insitu_PM25_2015_year.html", selfcontained = FALSE)
+
+
+########################################################
+########################################################
+########################################################
+########################################################
 
 
 ###### predicted ######
@@ -2398,7 +2407,6 @@ RH_coeffi_training <- extract_points(raster=result_stack$RH, input_stations = tr
 Cons_coeffi_training <- extract_points(raster=result_stack$X.Intercept., input_stations = training_station )
 
 
-
 # calculate the estimated value of the PM2.5 for the training data
 # "Moni ~  AOD_mean + wind_speed  + DEW+ temp+ RH "
 
@@ -2566,6 +2574,7 @@ plot(moni_real_estimate_tr$Monitoring,moni_real_estimate_tr$Estimate, xlim=c(0,1
      ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Training", cex.lab=1.4, cex.axis=1.4)
 text(10,100, substitute(R^2==a, list(a = round(r_2_tr, digits=2), cex.lab = 1.4)))
 abline(0,1,lwd=2, col="black")
+
 })
 dev.off()
 
@@ -2581,27 +2590,26 @@ plot(moni_real_estimate_val$Monitoring, moni_real_estimate_val$Estimate, xlim=c(
      ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Validation", cex.lab=1.3, cex.axis=1.3)
 text(10,100, substitute(R^2==a, list(a = round(r_2_val, digits=2), cex = 1.2)))
 abline(0,1,lwd=2, col="black")
+
 })
 dev.off()
 
 
 
 
-
-
+###########################################################
+########### RMS ###########################################
 ###########################################################
 ###########################################################
-###########################################################
-
 
 
 #### RMSE for the training
 
 dawit<-function(xx){
-  zz<- sqrt(sum(xx)/(length(xx)))
+  zz <- sqrt(sum(xx)/(length(xx)))
 }
 
-RMSE_tr<- moni_real_estimate_tr%>%
+RMSE_tr <- moni_real_estimate_tr%>%
   mutate(diff=(Monitoring-Estimate)^2)%>%
   #group_by(Month)%>%
   summarise(RMSE= dawit(diff))
@@ -2609,7 +2617,7 @@ RMSE_tr<- moni_real_estimate_tr%>%
 
 #### RMSE for the validation
 
-RMSE_val<- moni_real_estimate_val%>%
+RMSE_val <- moni_real_estimate_val%>%
   mutate(diff=(Monitoring-Estimate)^2)%>%
   #group_by(Month)%>%
   summarise(RMSE= dawit(diff))
@@ -2623,6 +2631,9 @@ mean(RMSE_tr$RMSE)
 # plot(x,y, type="n", ylim=c(0,5))
 # polygon(c(x[1], x, x[length(x)]), c(0, y, 0), col="green")
 
+
+##################################################################
+##################################################################
 
 
 library(ggplot2)

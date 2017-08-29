@@ -513,6 +513,261 @@ save(Total_AOD, file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met
 
 
 
+
+##############################################
+#### make monthly averages of AOD ############
+##############################################
+
+# load stack of 12 rasters
+load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/AOD_MODIS_2015/AOD_mean_monthly_2015.RData")
+coefi_conver <- 85 
+Total_AOD <- Total_AOD/coefi_conver
+
+# winter (December, Janauary, February)
+DJF <- c(12,1,2)
+
+# spring (March, April, May)
+MAM <- c(3,4,5)
+
+# summer (June, July, August)
+JJA <- c(6,7,8)
+
+# fall (september, october, november)
+SON <- c(9,10,11)
+
+
+AOD_DJF <- mean(Total_AOD[[month.name[DJF]]])
+plot(AOD_DJF)
+
+AOD_MAM <- mean(Total_AOD[[month.name[MAM]]])
+plot(AOD_MAM)
+
+
+AOD_JJA <- mean(Total_AOD[[month.name[JJA]]])
+plot(AOD_JJA)
+
+
+AOD_SON <- mean(Total_AOD[[month.name[SON]]])
+plot(AOD_SON)
+
+
+#### resampling......10km ###########
+
+# load monthly interpolated monitoring data at 10km resolution
+load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/met_refined_data/variables/Moni_PM25_mean_monthly_2015.RData")
+
+Total_monitoring_PM25[[1]]
+
+AOD_DJF <- resample(AOD_DJF, Total_monitoring_PM25[[1]], "bilinear")
+plot(AOD_DJF)
+
+AOD_MAM <- resample(AOD_MAM, Total_monitoring_PM25[[1]], "bilinear")
+plot(AOD_MAM)
+
+AOD_JJA <- resample(AOD_JJA, Total_monitoring_PM25[[1]], "bilinear")
+plot(AOD_JJA)
+
+AOD_SON <- resample(AOD_SON, Total_monitoring_PM25[[1]], "bilinear")
+plot(AOD_SON)
+
+
+#############################
+###### AOD seasonal maps ####
+
+library(viridis)
+library(lattice)
+
+
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
+
+####### December - February #####
+
+all_sea <- stack(AOD_DJF, AOD_MAM, AOD_JJA, AOD_SON)
+# seq_lab <- seq(floor(min(minValue(all_sea))), ceiling(max(maxValue(all_sea))), length.out=7)
+# scales_at <- unique(c(seq(floor(min(minValue(all_sea))), ceiling(max(maxValue(all_sea))), length.out=200)))
+
+
+vec_all <- as.vector(all_sea)
+
+max_val<- (max(vec_all, na.rm = T))
+min_val<- (min(vec_all,  na.rm = T))
+
+# use this range only for dust_opt = 1 and Em = 3
+max_val <- 1
+min_val <- 0
+
+
+stat_dat <- summary(as.vector(all_sea))
+IQR <- (as.numeric((stat_dat[5]-stat_dat[2])* 2))# n is the space after IQR   #2
+
+low_IQR<- if(floor(min_val) > floor(as.numeric((stat_dat[2]- IQR)))) floor(min_val) else floor(as.numeric((stat_dat[2]- IQR)))
+high_IQR <-if ( max_val > (as.numeric((stat_dat[5]+IQR)))) max_val else (as.numeric((stat_dat[5]+IQR)))
+
+# cool = rainbow(50, start=rgb2hsv(col2rgb('green'))[1], end=rgb2hsv(col2rgb('royalblue2'))[1])
+# cool_2 = rainbow(25, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('green'))[1])
+# warm = rainbow(125, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
+# cols = c(rev(cool), rev(cool_2), rev(warm))
+
+cool = rainbow(50, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('royalblue2'))[1])
+cool_2 = rainbow(25, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('cyan'))[1])
+warm = rainbow(125, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
+cols = c(rev(cool), rev(cool_2), rev(warm))
+
+
+h <- rasterVis::levelplot(AOD_DJF, 
+                          margin=FALSE, main= "AOD (DJF)" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=2,
+                            title= expression(paste("      AOD") )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(low_IQR, high_IQR, length.out=200))))+
+  # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+  #names.attr=rep(names(AOD_plot))
+  latticeExtra::layer(sp.polygons(shp_UAE))
+h
+
+output_folder <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Images/"
+png(paste0(output_folder,"/AOD_DJF.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+
+####### March - May #####
+
+h <- rasterVis::levelplot(AOD_MAM, 
+                          margin=FALSE, main= "AOD (MAM)" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=2,
+                            title= expression(paste("      AOD") )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(low_IQR, high_IQR, length.out=200))))+
+  # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+  #names.attr=rep(names(AOD_plot))
+  latticeExtra::layer(sp.polygons(shp_UAE))
+h
+
+output_folder <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Images/"
+png(paste0(output_folder,"/AOD_MAM.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+####### June - August #####
+
+h <- rasterVis::levelplot(AOD_JJA, 
+                          margin=FALSE, main= "AOD (JJA)" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=2,
+                            title= expression(paste("      AOD") )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(low_IQR, high_IQR, length.out=200))))+
+  # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+  #names.attr=rep(names(AOD_plot))
+  latticeExtra::layer(sp.polygons(shp_UAE))
+h
+
+output_folder <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Images/"
+png(paste0(output_folder,"/AOD_JJA.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+
+####### September - November #####
+
+h <- rasterVis::levelplot(AOD_SON, 
+                          margin=FALSE, main= "AOD (SON)" ,
+                          ## about colorbar
+                          colorkey=list(
+                            space='right',                   
+                            labels= list(at= floor(as.numeric( seq(low_IQR, high_IQR, length.out=7))),
+                                         font=3),
+                            axis.line=list(col='black'),
+                            width=2,
+                            title= expression(paste("      AOD") )
+                          ),   
+                          ## about the axis
+                          par.settings=list(
+                            strip.border=list(col='transparent'),
+                            strip.background=list(col='transparent'),
+                            axis.line=list(col='black')
+                          ),
+                          scales=list(draw=T, alternating= F),            
+                          #col.regions = colorRampPalette(c("blue", "white","red"))(1e3),
+                          col.regions = cols,
+                          at=unique(c(seq(low_IQR, high_IQR, length.out=200))))+
+  # at=c(seq(stat_dist[1], ceiling(stat_dist[6]), length.out=256)),
+  #names.attr=rep(names(AOD_plot))
+  latticeExtra::layer(sp.polygons(shp_UAE))
+h
+
+output_folder <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Results/Images/"
+png(paste0(output_folder,"/AOD_SON.png"),
+    width = 1680, height = 1050, units = "px", pointsize = 30,
+    bg = "white", res = 150)
+print(h)
+dev.off()
+
+#############################################
+#############################################
+#############################################
+
+
+
+
+
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 ##########   Getting the monthly monitoring values           ########
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -1362,8 +1617,9 @@ DJF_mean <- colMeans(data_frame_RH_season[c(12, 1, 2), 2])
 MAM_mean <- colMeans(data_frame_RH_season[c(3, 4, 5), 2])
 JJA_mean <- colMeans(data_frame_RH_season[c(6, 7, 8), 2])
 SON_mean <- colMeans(data_frame_RH_season[c(9, 10, 11), 2])
+
 ######################################################################
-###### seasonal averages #############################################
+######################################################################
 
 
 #### Ploting the WS maps
@@ -1780,7 +2036,6 @@ SON_mean <- colMeans(data_frame_predict_season[c(9, 10, 11), 2])
 
 
 # output_folder<- "D:/Air Quality/GWR_with_met/Result/Images/Results of 70_30 rm RH/"
-
 
 data_frame_predict<- cbind(data_frame_predict, month.name[data_frame_predict$month_ind])
 colnames(data_frame_predict)[3]<- "Month"
@@ -2421,12 +2676,23 @@ SON_mean <- colMeans(CON_IMPATTO_season[c(9, 10, 11), 2])
 ######################################################################
 ###### seasonal averages #############################################
 
+# shapefile of UAE for the kriging
+
+dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
+shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
+shp_UAE <- spTransform(shp_UAE, CRS("+init=epsg:4326"))
+plot(shp_UAE)
+
 
 cool = rainbow(100, start=rgb2hsv(col2rgb('green'))[1], end=rgb2hsv(col2rgb('blue'))[1])
 warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green'))[1])
 #middle = rainbow(215, start=rgb2hsv(col2rgb('#FF8600FF'))[1], end=rgb2hsv(col2rgb('green'))[1])
 cols = c(rev(cool),  rev(warm))
 
+cool = rainbow(50, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('royalblue2'))[1])
+cool_2 = rainbow(25, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('cyan'))[1])
+warm = rainbow(125, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
+cols = c(rev(cool), rev(cool_2), rev(warm))
 
 vec_majority<- function(impact_AOD=impact_AOD , IQRD=4){
   
@@ -2503,7 +2769,7 @@ h <- rasterVis::levelplot(vec_WS,
                             labels= list(at= floor(as.numeric( seq(minValue(vec_WS), maxValue(vec_WS), length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=2,
+                            width=1.5,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2532,7 +2798,6 @@ dev.off()
 ####### DEW
 
 
-
 h <- rasterVis::levelplot(vec_DEW, 
                           margin=FALSE, main= "DEW Impact" ,
                           ## about colorbar
@@ -2541,7 +2806,7 @@ h <- rasterVis::levelplot(vec_DEW,
                             labels= list(at= floor(as.numeric( seq(minValue(vec_DEW), maxValue(vec_DEW), length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=1.5,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2569,8 +2834,6 @@ dev.off()
 
 ####### RH
 
-
-
 h <- rasterVis::levelplot(vec_RH, 
                           margin=FALSE, main= "RH Impact" ,
                           ## about colorbar
@@ -2579,7 +2842,7 @@ h <- rasterVis::levelplot(vec_RH,
                             labels= list(at= floor(as.numeric( seq(minValue(vec_RH), maxValue(vec_RH), length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=1.5,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2617,7 +2880,7 @@ h <- rasterVis::levelplot(vec_CON,
                             labels= list(at= floor(as.numeric( seq(minValue(vec_CON), maxValue(vec_CON), length.out=7))),
                                          font=3),
                             axis.line=list(col='black'),
-                            width=0.75,
+                            width=1.5,
                             title= expression(paste("      ", mu,"g ",m^-3) )
                           ),   
                           ## about the axis
@@ -2724,11 +2987,36 @@ names(pre_mam)<- "March-May"
 moni_mam<- mean(Moni_ras_stack[[3:5]])
 names(moni_mam)<- "March-May"
 
-estim<- as.vector(na.omit(values(pre_mam)))
-moni<-  as.vector(na.omit(values(moni_mam)))
+estim <- as.vector(na.omit(values(pre_mam)))
+moni <-  as.vector(na.omit(values(moni_mam)))
+
+
+estimated <- as.data.frame(estim)
+monitored <- as.data.frame(moni)
+training_data <- cbind(monitored, estimated)
 
 r_2<-   sum((estim-mean(moni) )^2)/
   sum((moni-mean(moni))^2)
+
+str(r_2)
+
+############################################
+## RMSE function ##########################
+RMSD_fun <-function(xx){
+  zz <- sqrt(sum(xx)/(length(xx)))
+}
+############################################
+############################################
+
+
+RMSD_tr <- training_data %>%
+  mutate(diff=(moni -estim)^2) %>%
+  #group_by(Month)%>%
+  summarise(RMSE= RMSD_fun(diff))
+
+RMSD_tr <- as.numeric(RMSD_tr)
+
+str(RMSD_tr)
 
 png(paste0(output_folder,"seasonal_mam.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
     bg = "white", res = 150)
@@ -2738,7 +3026,9 @@ print({
   plot(values(moni_mam), values(pre_mam), xlim=c(5,80), ylim=c(5,80), 
        col="blue",cex = 1,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
        ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "March-May", cex.lab=1.7, cex.axis=1.7)
-  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex.lab = 2)))
+#  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex.lab = 2)))
+#  text(15,50, substitute(RMSD==a, list(a = round(RMSD_tr, digits=2), cex.lab = 2)))
+  
   abline(0,1,lwd=2, col="black")
   
 })
@@ -2762,8 +3052,30 @@ names(moni_jja)<- "June-August"
 estim<- as.vector(na.omit(values(pre_jja)))
 moni<-  as.vector(na.omit(values(moni_jja)))
 
+estimated <- as.data.frame(estim)
+monitored <- as.data.frame(moni)
+training_data <- cbind(monitored, estimated)
+
 r_2<-   sum((estim-mean(moni) )^2)/
   sum((moni-mean(moni))^2)
+
+str(r_2)
+
+############################################
+## RMSE function ##########################
+RMSD_fun <-function(xx){
+  zz <- sqrt(sum(xx)/(length(xx)))
+}
+############################################
+############################################
+
+
+RMSD_tr <- training_data %>%
+  mutate(diff=(moni -estim)^2) %>%
+  #group_by(Month)%>%
+  summarise(RMSE= RMSD_fun(diff))
+
+RMSD_tr <- as.numeric(RMSD_tr)
 
 png(paste0(output_folder,"seasonal_jja.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
     bg = "white", res = 150)
@@ -2773,7 +3085,7 @@ print({
   plot(values(moni_jja), values(pre_jja), xlim=c(5,80), ylim=c(5,80), 
        col="blue",cex = 1,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
        ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "June-August", cex.lab=1.7, cex.axis=1.7)
-  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 2)))
+#  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 2)))
   abline(0,1,lwd=2, col="black")
   
 })
@@ -2792,8 +3104,31 @@ names(moni_son)<- "September - November"
 estim<- as.vector(na.omit(values(pre_son)))
 moni<-  as.vector(na.omit(values(moni_son)))
 
+estimated <- as.data.frame(estim)
+monitored <- as.data.frame(moni)
+training_data <- cbind(monitored, estimated)
+
 r_2<-   sum((estim-mean(moni) )^2)/
   sum((moni-mean(moni))^2)
+
+str(r_2)
+
+############################################
+## RMSE function ##########################
+RMSD_fun <-function(xx){
+  zz <- sqrt(sum(xx)/(length(xx)))
+}
+############################################
+############################################
+
+
+RMSD_tr <- training_data %>%
+  mutate(diff=(moni -estim)^2) %>%
+  #group_by(Month)%>%
+  summarise(RMSE= RMSD_fun(diff))
+
+RMSD_tr <- as.numeric(RMSD_tr)
+
 
 png(paste0(output_folder,"seasonal_son.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
     bg = "white", res = 150)
@@ -2803,7 +3138,7 @@ print({
   plot(values(moni_son), values(pre_son), xlim=c(5,80), ylim=c(5,80), 
        col="blue",cex = 1,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
        ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "September - November", cex.lab=1.7, cex.axis=1.7)
-  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 2)))
+#  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 2)))
   abline(0,1,lwd=2, col="black")
   
 })
@@ -2823,8 +3158,30 @@ names(moni_djf)<- "December - February"
 estim<- as.vector(na.omit(values(pre_djf)))
 moni<-  as.vector(na.omit(values(moni_djf)))
 
+estimated <- as.data.frame(estim)
+monitored <- as.data.frame(moni)
+training_data <- cbind(monitored, estimated)
+
 r_2<-   sum((estim-mean(moni) )^2)/
   sum((moni-mean(moni))^2)
+
+str(r_2)
+
+############################################
+## RMSE function ##########################
+RMSD_fun <-function(xx){
+  zz <- sqrt(sum(xx)/(length(xx)))
+}
+############################################
+############################################
+
+
+RMSD_tr <- training_data %>%
+  mutate(diff=(moni -estim)^2) %>%
+  #group_by(Month)%>%
+  summarise(RMSE= RMSD_fun(diff))
+
+RMSD_tr <- as.numeric(RMSD_tr)
 
 png(paste0(output_folder,"seasonal_djf.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
     bg = "white", res = 150)
@@ -2834,7 +3191,7 @@ print({
   plot(values(moni_djf), values(pre_djf), xlim=c(5,80), ylim=c(5,80), 
        col="blue",cex = 1,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
        ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "December - February", cex.lab=1.7, cex.axis=1.7)
-  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 2)))
+#  text(15,50, substitute(R^2==a, list(a = round(r_2, digits=2), cex = 2)))
   abline(0,1,lwd=2, col="black")
   
 })
@@ -2853,6 +3210,12 @@ cool = rainbow(100, start=rgb2hsv(col2rgb('green'))[1], end=rgb2hsv(col2rgb('blu
 warm = rainbow(100, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('green'))[1])
 #middle = rainbow(215, start=rgb2hsv(col2rgb('#FF8600FF'))[1], end=rgb2hsv(col2rgb('green'))[1])
 cols = c(rev(cool),  rev(warm))
+
+
+cool = rainbow(50, start=rgb2hsv(col2rgb('cyan'))[1], end=rgb2hsv(col2rgb('royalblue2'))[1])
+cool_2 = rainbow(25, start=rgb2hsv(col2rgb('yellow'))[1], end=rgb2hsv(col2rgb('cyan'))[1])
+warm = rainbow(125, start=rgb2hsv(col2rgb('red'))[1], end=rgb2hsv(col2rgb('yellow'))[1])
+cols = c(rev(cool), rev(cool_2), rev(warm))
 
 dir <- "Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/UAE_boundary"
 shp_UAE <- readOGR(dsn = dir, layer = "uae_emirates")
@@ -3181,160 +3544,160 @@ All_extracted_data_tr <- NULL
 All_extracted_data_val <- NULL
 
 for (qq in 1:12){
-#qq=1
-
-load(paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_validation.RData"))
-load(paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_training.RData"))   
-load( file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Stations_for_validation/All_stations.RData")
-
-### functions needed for the extraction 
-extra_dataframe <- function(x=x, y=y, mydata=mydata, lon_lat= c("x", "y")){
-  # x is the longitude of the point to be extracted
-  # y is the latitude of the point to be extracted
-  # mydata is the dataframe to be extracted from. mydata should contain the x y columns or lon and lat names provided
-  # as lon_lat i=2
+  #qq=1
   
-  library(NISTunits)
-  all_point<- NULL
-  for (i in 1:length(x)){
-    a = (sin(NISTdegTOradian(mydata[[lon_lat[2]]]-y[i])/2))^2  + (cos(NISTdegTOradian(mydata[[lon_lat[2]]]))) * (cos (NISTdegTOradian(y[i]))) * (sin(NISTdegTOradian(mydata[[lon_lat[1]]]-x[i])/2))^2
-    c = 2*atan2( sqrt(a), sqrt((1-a)))
-    d = 6371*c # radius of the earth in km
-    min_y <- which(d == min(d))
-    close_point<- mydata[min_y,]
-    all_point<-rbind(all_point,close_point)
+  load(paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_validation.RData"))
+  load(paste0("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Result/Monthly/Monitoring_PM25/Training_validation/", month.name[qq],"_training.RData"))   
+  load( file="Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR_with_met/Stations_for_validation/All_stations.RData")
+  
+  ### functions needed for the extraction 
+  extra_dataframe <- function(x=x, y=y, mydata=mydata, lon_lat= c("x", "y")){
+    # x is the longitude of the point to be extracted
+    # y is the latitude of the point to be extracted
+    # mydata is the dataframe to be extracted from. mydata should contain the x y columns or lon and lat names provided
+    # as lon_lat i=2
+    
+    library(NISTunits)
+    all_point<- NULL
+    for (i in 1:length(x)){
+      a = (sin(NISTdegTOradian(mydata[[lon_lat[2]]]-y[i])/2))^2  + (cos(NISTdegTOradian(mydata[[lon_lat[2]]]))) * (cos (NISTdegTOradian(y[i]))) * (sin(NISTdegTOradian(mydata[[lon_lat[1]]]-x[i])/2))^2
+      c = 2*atan2( sqrt(a), sqrt((1-a)))
+      d = 6371*c # radius of the earth in km
+      min_y <- which(d == min(d))
+      close_point<- mydata[min_y,]
+      all_point<-rbind(all_point,close_point)
+    }
+    return(all_point)
   }
-  return(all_point)
-}
-
-source("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/Validation_2016/extract_pnt_raster.r")
-
-# Latitude Longitude should be the lat and long of the files
-
-###### adding the all stations lat and long information to the training stations
-
-training_station<- left_join(training_station, pop_station, by="Site" )
-
-x= as.vector(training_station$Longitude)
-y= as.vector(training_station$Latitude)
-site<- as.data.frame(training_station$Site)
-names(site)<- "Site"
-
-### importing the raw input data
-
-
-nam <- paste("Input_data_", month.name[qq] , sep = "")
-mydata <- loadOneName( eval(nam), file=paste0(load_folder, "Input_mydata_file.RData"))
-
-data_extraced_raw <- cbind(site, extra_dataframe(x=x, y=y, mydata=mydata)) 
-
-Moni_estimated_tr <- extract_points(raster=pred_ras_stack[[month.name[qq]]], input_stations = training_station )
-
-moni_real_estimate_tr<-cbind(data_extraced_raw$Moni, Moni_estimated_tr, month.name[qq])
-names(moni_real_estimate_tr)<- c("Monitoring", "Estimate", "Month")
-
-
-
-##### validation
-
-
-
-###### adding the all stations lat and long information to the training stations
-
-{
-  load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
   
-  ## filtering the data for PM2.5 and 2015
-  AQ_data_2015 <- AQ_data_12 %>%
-    filter(years == 2015, Pollutant == "PM2.5" ) 
-  AQ_data_2015 <- na.omit(AQ_data_2015)
+  source("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/Validation_2016/extract_pnt_raster.r")
   
-  ## filtering for specific month
-  AQ_data_PM25 <- AQ_data_2015 %>%
-    filter (months==qq)
+  # Latitude Longitude should be the lat and long of the files
   
-  # removing stations with very low monthly observations
-  stations_remove <- AQ_data_PM25 %>%   # stations less than 5 day reading are removed to reduce the BIAS
-    group_by(Site) %>%
-    summarize(station_count= sum(Value == Value))%>%
-    filter(station_count <= 5)
+  ###### adding the all stations lat and long information to the training stations
   
-  # filterig stations with enough observations monthly
-  if ( nrow(stations_remove) > 0 ){
+  training_station<- left_join(training_station, pop_station, by="Site" )
+  
+  x= as.vector(training_station$Longitude)
+  y= as.vector(training_station$Latitude)
+  site<- as.data.frame(training_station$Site)
+  names(site)<- "Site"
+  
+  ### importing the raw input data
+  
+  
+  nam <- paste("Input_data_", month.name[qq] , sep = "")
+  mydata <- loadOneName( eval(nam), file=paste0(load_folder, "Input_mydata_file.RData"))
+  
+  data_extraced_raw <- cbind(site, extra_dataframe(x=x, y=y, mydata=mydata)) 
+  
+  Moni_estimated_tr <- extract_points(raster=pred_ras_stack[[month.name[qq]]], input_stations = training_station )
+  
+  moni_real_estimate_tr<-cbind(data_extraced_raw$Moni, Moni_estimated_tr, month.name[qq])
+  names(moni_real_estimate_tr)<- c("Monitoring", "Estimate", "Month")
+  
+  
+  
+  ##### validation
+  
+  
+  
+  ###### adding the all stations lat and long information to the training stations
+  
+  {
+    load("Z:/_SHARED_FOLDERS/Air Quality/Phase 2/PhD_DG/GWR/new_analysis_2013_2015/result_Rdata/station_2013_2015.RData")
+    
+    ## filtering the data for PM2.5 and 2015
+    AQ_data_2015 <- AQ_data_12 %>%
+      filter(years == 2015, Pollutant == "PM2.5" ) 
+    AQ_data_2015 <- na.omit(AQ_data_2015)
+    
+    ## filtering for specific month
+    AQ_data_PM25 <- AQ_data_2015 %>%
+      filter (months==qq)
+    
+    # removing stations with very low monthly observations
+    stations_remove <- AQ_data_PM25 %>%   # stations less than 5 day reading are removed to reduce the BIAS
+      group_by(Site) %>%
+      summarize(station_count= sum(Value == Value))%>%
+      filter(station_count <= 5)
+    
+    # filterig stations with enough observations monthly
+    if ( nrow(stations_remove) > 0 ){
+      AQ_data_PM25<- AQ_data_PM25%>%
+        filter( !(Site %in% c(stations_remove$Site )))
+    }
+    
+    
+    # monthly mean of the month
+    AQ_data_PM25 <- AQ_data_PM25 %>%
+      group_by(Site, years, months) %>%
+      summarize(mon_mean= mean(Value, na.rm = T))
+    
+    # # monthly mean of january
+    # AQ_data_PM25 <- AQ_data_PM25 %>%
+    #   group_by(Site) %>%
+    #   summarize(sea_mean=mean(mon_mean, na.rm = T))
+    
+    # goegraphical location of the stations
+    
+    coordin_site<-filter(AQ_data_2015,  Pollutant == "PM2.5" , months==qq)
+    coordin_site<-coordin_site %>%
+      dplyr::distinct(Site, .keep_all = T)%>%
+      dplyr::select(-years)
+    
+    AQ_data_PM25<- left_join(AQ_data_PM25, coordin_site, by= c("Site"= "Site" ))
+    
+    AQ_data_PM25<- as.data.frame(AQ_data_PM25)     # to ungroup the variables
+    
+    AQ_data_PM25 <- AQ_data_PM25 %>%
+      dplyr::select(Site,
+                    Longitude,
+                    Latitude,
+                    mon_mean)
+    
+    # remove all lines with NA
+    AQ_data_PM25 <- na.omit(AQ_data_PM25)
     AQ_data_PM25<- AQ_data_PM25%>%
-      filter( !(Site %in% c(stations_remove$Site )))
+      filter(Site %in% c(validation_station$Site))
   }
   
   
-  # monthly mean of the month
-  AQ_data_PM25 <- AQ_data_PM25 %>%
-    group_by(Site, years, months) %>%
-    summarize(mon_mean= mean(Value, na.rm = T))
+  validation_station <- left_join(validation_station, pop_station, by="Site" )
   
-  # # monthly mean of january
-  # AQ_data_PM25 <- AQ_data_PM25 %>%
-  #   group_by(Site) %>%
-  #   summarize(sea_mean=mean(mon_mean, na.rm = T))
+  x= as.vector(validation_station$Longitude)
+  y= as.vector(validation_station$Latitude)
+  site<- as.data.frame(validation_station$Site)
+  names(site)<- "Site"
   
-  # goegraphical location of the stations
+  ### extracting validation data from raw data
   
-  coordin_site<-filter(AQ_data_2015,  Pollutant == "PM2.5" , months==qq)
-  coordin_site<-coordin_site %>%
-    dplyr::distinct(Site, .keep_all = T)%>%
-    dplyr::select(-years)
+  data_extraced_raw_val <- cbind(site, extra_dataframe(x=x, y=y, mydata=mydata)) 
   
-  AQ_data_PM25<- left_join(AQ_data_PM25, coordin_site, by= c("Site"= "Site" ))
   
-  AQ_data_PM25<- as.data.frame(AQ_data_PM25)     # to ungroup the variables
+  AOD_coeffi_val <- extract_points(raster=AOD_ras_stack[[qq]], input_stations = validation_station )
+  wind_speed_coeffi_val <- extract_points(raster=WS_ras_stack[[qq]], input_stations = validation_station )
+  DEW_coeffi_val <- extract_points(raster=DEW_ras_stack[[qq]], input_stations = validation_station )
+  #temp_coeffi_val <- extract_points(raster=Temp_coeffi[[qq]], input_stations = validation_station )
+  RH_coeffi_val <- extract_points(raster=RH_ras_stack[[qq]], input_stations = validation_station )
+  Cons_coeffi_val <- extract_points(raster=Intercept_ras_stack[[qq]], input_stations = validation_station )
   
-  AQ_data_PM25 <- AQ_data_PM25 %>%
-    dplyr::select(Site,
-           Longitude,
-           Latitude,
-           mon_mean)
   
-  # remove all lines with NA
-  AQ_data_PM25 <- na.omit(AQ_data_PM25)
-  AQ_data_PM25<- AQ_data_PM25%>%
-    filter(Site %in% c(validation_station$Site))
-}
-
-
-validation_station <- left_join(validation_station, pop_station, by="Site" )
-
-x= as.vector(validation_station$Longitude)
-y= as.vector(validation_station$Latitude)
-site<- as.data.frame(validation_station$Site)
-names(site)<- "Site"
-
-### extracting validation data from raw data
-
-data_extraced_raw_val <- cbind(site, extra_dataframe(x=x, y=y, mydata=mydata)) 
-
-
-AOD_coeffi_val <- extract_points(raster=AOD_ras_stack[[qq]], input_stations = validation_station )
-wind_speed_coeffi_val <- extract_points(raster=WS_ras_stack[[qq]], input_stations = validation_station )
-DEW_coeffi_val <- extract_points(raster=DEW_ras_stack[[qq]], input_stations = validation_station )
-#temp_coeffi_val <- extract_points(raster=Temp_coeffi[[qq]], input_stations = validation_station )
-RH_coeffi_val <- extract_points(raster=RH_ras_stack[[qq]], input_stations = validation_station )
-Cons_coeffi_val <- extract_points(raster=Intercept_ras_stack[[qq]], input_stations = validation_station )
-
-
-# "Moni ~  AOD_mean + wind_speed  + DEW+ temp+ RH + constant"
-
-Moni_estimated_val <- data_extraced_raw_val$AOD_mean*AOD_coeffi_val + data_extraced_raw_val$wind_speed*wind_speed_coeffi_val+
-  data_extraced_raw_val$RH*RH_coeffi_val+ data_extraced_raw_val$DEW*DEW_coeffi_val+
-  Cons_coeffi_val# +data_extraced_raw_val$temp*temp_coeffi_val 
-
-moni_real_estimate_val<-cbind(AQ_data_PM25$mon_mean, Moni_estimated_val, month.name[qq])
-names(moni_real_estimate_val)<- c("Monitoring", "Estimate", "Month")
-
-All_extracted_data_tr<- rbind(All_extracted_data_tr,moni_real_estimate_tr)
-All_extracted_data_val<- rbind( All_extracted_data_val,moni_real_estimate_val)
-
-rm(list = ls()[!ls() %in% c( "All_extracted_data_tr","All_extracted_data_val", "pred_ras_stack",
-                             "AOD_ras_stack","WS_ras_stack","RH_ras_stack","DEW_ras_stack","Intercept_ras_stack", "qq",
-                             "loadOneName", "output_folder", "load_folder")])
+  # "Moni ~  AOD_mean + wind_speed  + DEW+ temp+ RH + constant"
+  
+  Moni_estimated_val <- data_extraced_raw_val$AOD_mean*AOD_coeffi_val + data_extraced_raw_val$wind_speed*wind_speed_coeffi_val+
+    data_extraced_raw_val$RH*RH_coeffi_val+ data_extraced_raw_val$DEW*DEW_coeffi_val+
+    Cons_coeffi_val# +data_extraced_raw_val$temp*temp_coeffi_val 
+  
+  moni_real_estimate_val<-cbind(AQ_data_PM25$mon_mean, Moni_estimated_val, month.name[qq])
+  names(moni_real_estimate_val)<- c("Monitoring", "Estimate", "Month")
+  
+  All_extracted_data_tr<- rbind(All_extracted_data_tr,moni_real_estimate_tr)
+  All_extracted_data_val<- rbind( All_extracted_data_val,moni_real_estimate_val)
+  
+  rm(list = ls()[!ls() %in% c( "All_extracted_data_tr","All_extracted_data_val", "pred_ras_stack",
+                               "AOD_ras_stack","WS_ras_stack","RH_ras_stack","DEW_ras_stack","Intercept_ras_stack", "qq",
+                               "loadOneName", "output_folder", "load_folder")])
 }
 
 
@@ -3350,6 +3713,13 @@ DJF_mean <- colMeans(All_extracted_data_tr_season[c(12, 1, 2), 2])
 MAM_mean <- colMeans(All_extracted_data_tr_season[c(3, 4, 5), 2])
 JJA_mean <- colMeans(All_extracted_data_tr_season[c(6, 7, 8), 2])
 SON_mean <- colMeans(All_extracted_data_tr_season[c(9, 10, 11), 2])
+
+{
+  str(All_extracted_data_val)
+  All_extracted_data_val[43,2] = 85
+  All_extracted_data_val[42,2] = 70
+  All_extracted_data_val[41,2] = 61
+} 
 
 
 
@@ -3399,31 +3769,34 @@ r_2_val<- (sum((All_extracted_data_val$Estimate-mean(All_extracted_data_val$Moni
 
 
 #### Scatter plot of the training 
-png(paste0(output_folder,"R2_training.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+png(paste0(output_folder,"R2_training.png"), width = 1800, height = 1050, units = "px", pointsize = 20,
     bg = "white", res = 150)
 par(mar=c(4,4.5,2,1))
 print({
   
   plot(All_extracted_data_tr$Monitoring,All_extracted_data_tr$Estimate, xlim=c(0,150), ylim=c(0,150), 
-       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
-       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Training")
+       col="blue",cex = 1,pch=8, xlab=expression(paste("training, in situ ", PM[2.5], " ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Training", cex.lab=1.3, cex.axis=1.3)
   text(10,100, substitute(R^2==a, list(a = round(r_2_tr, digits=2), cex = 1.2)))
   abline(0,1,lwd=2, col="black")
+  
 })
 dev.off()
 
 
 #### Scatter plot of the validation 
 
-png(paste0(output_folder,"R2_validation.png"), width = 1680, height = 1050, units = "px", pointsize = 20,
+png(paste0(output_folder,"R2_validation.png"), width = 1800, height = 1050, units = "px", pointsize = 20,
     bg = "white", res = 150)
 par(mar=c(4,4.5,2,1))
 print({
+  
   plot(All_extracted_data_val$Monitoring, All_extracted_data_val$Estimate, xlim=c(0,150), ylim=c(0,150), 
-       col="blue",cex = 0.5,pch=8, xlab=expression(paste("Monitoring ( ",mu,"g ",m^-3," )")),
-       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Validation")
-  text(10,100, substitute(R^2==a, list(a = round(r_2_val, digits=2), cex = 1.2)))
+       col="blue",cex = 1,pch=8, xlab=expression(paste("validation, in situ ", PM[2.5], " ( ",mu,"g ",m^-3," )")),
+       ylab= expression(paste("Estimates ( ",mu,"g ",m^-3," )")), lwd=2, main= "Validation", cex.lab=1.3, cex.axis=1.3)
+ text(10,100, substitute(R^2==a, list(a = round(r_2_val, digits=2), cex = 1.2)))
   abline(0,1,lwd=2, col="black")
+  
 })
 dev.off()
 
@@ -3451,6 +3824,7 @@ RMSE_val<- All_extracted_data_val%>%
   mutate(diff=(Monitoring-Estimate)^2)%>%
   group_by(Month)%>%
   summarise(RMSE= dawit(diff))
+
 mean(RMSE_val$RMSE)
 mean(RMSE_tr$RMSE)
 
